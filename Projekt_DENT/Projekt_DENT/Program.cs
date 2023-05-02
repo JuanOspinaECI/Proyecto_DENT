@@ -18,6 +18,7 @@ namespace Projekt_DENT
         static string password = "holaholahola";
         // Iniciar un servidor web simple
         static WebServer server = new WebServer();
+        static WebServer_2 server_2 = new WebServer_2();
 
         // Contador de ´cantidad de ususarios conectados
         static int connectedCount = 0;
@@ -77,6 +78,7 @@ namespace Projekt_DENT
                     Debug.WriteLine("message:" + ex.Message);
                     Debug.WriteLine("stack:" + ex.StackTrace);
                 }
+                server_2.Start(ssid);
             }
             else
             {

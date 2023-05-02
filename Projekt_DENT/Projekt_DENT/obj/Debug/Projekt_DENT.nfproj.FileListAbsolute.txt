@@ -5,7 +5,6 @@ C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projek
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.Resources.nanoresources
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.nfproj.NanoGenerateResource.Cache
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\Projekt_DENT.exe
-C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\Projekt_DENT.bin
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\Projekt_DENT.pdb
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\Projekt_DENT.pe
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\Projekt_DENT.pdbx
@@ -61,8 +60,6 @@ C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projek
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\System.Net.xml
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\System.Net.Http.xml
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\System.Threading.xml
-C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.pe
-C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.pdbx
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.nfproj.CopyComplete
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.exe
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.pdb
@@ -92,3 +89,6 @@ C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projek
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\System.Net.xml
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\System.Net.Http.xml
 C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\System.Threading.xml
+C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\bin\Debug\Projekt_DENT.bin
+C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.pe
+C:\Users\Usuario\Documents\DENT\Proyecto_DENT_\Proyecto_DENT\Projekt_DENT\Projekt_DENT\obj\Debug\Projekt_DENT.pdbx

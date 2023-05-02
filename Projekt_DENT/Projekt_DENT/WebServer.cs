@@ -75,6 +75,7 @@ namespace Projekt_DENT
                     }
                     else
                     {
+                        Debug.WriteLine("URL_cero_: " + url[0]);
                         response.ContentType = "text/html";
                         responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), "");
                         OutPutResponse(response, responseString);
