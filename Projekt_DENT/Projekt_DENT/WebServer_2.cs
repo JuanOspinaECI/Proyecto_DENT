@@ -1,8 +1,4 @@
-﻿//
-// Copyright (c) .NET Foundation and Contributors
-// See LICENSE file in the project root for full license information.
-//
-
+﻿
 using System;
 using System.Collections;
 using System.Device.Wifi;
@@ -11,13 +7,12 @@ using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
-using JsonConfigurationStore;
 using nanoFramework.Runtime.Native;
 
 namespace Projekt_DENT
 {
 
-    public class WebServer
+    public class WebServer_2
     {
         HttpListener _listener;
         Thread _serverThread;
@@ -30,16 +25,8 @@ namespace Projekt_DENT
         static int hd = 80;
         static string temp = "20";
         static string humedad = "80%";
-        static ConfigurationStore configurationStore = new ConfigurationStore();
-        static Configuration configuration_ = new Configuration();
-
         public void refresh()
         {
-            if (configurationStore.IsConfigFileExisting ? true : false)
-            {
-                configuration_ = configurationStore.GetConfig();
-                temp_op = configuration_.Unidad_temperatura;
-            }
             switch (temp_op)
             {
                 case "opc1":
@@ -53,13 +40,22 @@ namespace Projekt_DENT
                     break;
                 default:
                     tp = tp - 10;
-                    temp = tp + " K";
+                    temp = tp + " F";
                     break;
             }
             humedad = hd.ToString() + "%";
         }
-        public void Start()
+        public void set_ssid(String name) 
         {
+            ssid = name;
+        }
+        public void set_password(String pass)
+        {
+            password = pass;
+        }
+        public void Start(String red)
+        {
+            ssid = red;
             if (_listener == null)
             {
                 _listener = new HttpListener("http");
@@ -110,11 +106,10 @@ namespace Projekt_DENT
                     else
                     {
                         Debug.WriteLine("URL_cero_: " + url[0]);
+                        Debug.WriteLine("URL_: " + request.RawUrl.ToString());
                         response.ContentType = "text/html";
-                        responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), "");
                         refresh();
-                        responseString = ReplaceTemperature(responseString, " " + temp);
-                        responseString = ReplaceHumedad(responseString, " " + humedad);
+                        responseString = main_2();
                         OutPutResponse(response, responseString);
                     }
                     break;
@@ -129,23 +124,9 @@ namespace Projekt_DENT
                     password = (string)hashPars["password"];
                     temp_opc = (string)hashPars["Option_t"];
                     string message = string.Empty;
-                    
-                    
-                    
-                    if (configurationStore.IsConfigFileExisting ? true : false)
-                    {
-                        configuration_ = configurationStore.GetConfig();
-                    }
-                    else 
-                    {
-                        configuration_.SSID = string.Empty;
-                        configuration_.PASSWORD = string.Empty;
-                        configuration_.Unidad_temperatura = string.Empty;
-                    }
 
-                    if (!string.IsNullOrEmpty(ssid)) 
+                    if (!string.IsNullOrEmpty(ssid))
                     {
-                        configuration_.SSID = ssid;
                         Debug.WriteLine($"Wireless parameters SSID:{ssid}");
                         // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
                         message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
@@ -153,7 +134,6 @@ namespace Projekt_DENT
 
                     if (!string.IsNullOrEmpty(password))
                     {
-                        configuration_.PASSWORD = password;
                         Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
                         // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
                         message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
@@ -161,20 +141,18 @@ namespace Projekt_DENT
                     }
                     if (!string.IsNullOrEmpty(temp_opc))
                     {
-                        configuration_.Unidad_temperatura = temp_opc;
                         Debug.WriteLine($"Wireless parameters temperature option:{temp_opc}");
                         temp_op = temp_opc;
                         // Guardar config en JSON
                         message = "<p>Configuracion de temperatura actualizada</p>";
                     }
-                    var writeResult = configurationStore.WriteConfig(configuration_);
-                    Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
 
-                    responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), message);
+                    
                     //responseString = CreateMainPage(message);
                     refresh();
-                    responseString = ReplaceTemperature(responseString, " " + temp);
-                    responseString = ReplaceHumedad(responseString, " " + humedad);
+                    responseString = ReplaceMessage(main_2(), message);
+                    //responseString = ReplaceTemperature(responseString, " " + temp);
+                    //responseString = ReplaceHumedad(responseString, " " + humedad);
                     OutPutResponse(response, responseString);
                     //isApSet = true;
                     break;
@@ -182,7 +160,7 @@ namespace Projekt_DENT
 
             response.Close();
 
-            /*if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
+            if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
             {
                 // Enable the Wireless station interface
                 // Habilitar la interfaz de la estación wireless
@@ -192,10 +170,10 @@ namespace Projekt_DENT
                 WirelessAP.Disable();
                 Thread.Sleep(200);
                 Debug.WriteLine("Hola a reiniciar");
-                
-                
+
+
                 Power.RebootDevice();
-            }*/
+            }
         }
 
         static string ReplaceMessage(string page, string message)
@@ -243,7 +221,7 @@ namespace Projekt_DENT
 
         static Hashtable ParseParamsFromStream(Stream inputStream)
         {
-            //Debug.WriteLine("stream" + inputStream.ToString());
+            Debug.WriteLine("stream" + inputStream.ToString());
             byte[] buffer = new byte[inputStream.Length];
             inputStream.Read(buffer, 0, (int)inputStream.Length);
 
@@ -262,10 +240,11 @@ namespace Projekt_DENT
                     string[] nameValue = pair.Split('=');
                     hash.Add(nameValue[0], nameValue[1]);
                 }
-                catch {
-                   
+                catch
+                {
+
                 }
-                
+
             }
 
             return hash;
@@ -298,6 +277,20 @@ namespace Projekt_DENT
                 " @media only screen and (max-width: 768px) { form {max-width: 100%;}} " +
                 "</style><title>NanoFramework</title></head>";
         }
-        
+        static string main_2()
+        {
+            return $"<!DOCTYPE html><html>\r\n<head>\r\n" +
+                "<meta charset=\"UTF-8\">\r\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\r\n" +
+                "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    \r\n" +
+                "<title>Dispositivo </title>\r\n</head>\r\n <body>\r\n  <h1>Dispostivo de Temperatura y Humedad</h1>\r\n " +
+                "<h2>Conectado actualmente a la red: " + ssid + "</h2>\r\n  <p>Hora local: " + DateTime.UtcNow.ToString() + "</p>\r\n" +
+                "<p>Temperatura: " + temp + "</p>\r\n" +
+                "<p>Humedad: " + humedad + "</p>\r\n  <form method='GET'>\r\n\t<input type=\"submit\" value=\"Actualizar\">\r\n </form> \r\n"
+                + "<form method='POST'>\r\n    <fieldset><legend>Unidad de temperatura</legend>\r\n\t\t<input type=\"radio\" id=\"opc1\"" +
+                "name=\"Option_t\" value=\"opc1\">\r\n\t\t<label for=\"opc1\">Opcion 1</label><br>\r\n\t\t<input type=\"radio\" id=\"opc2\"" +
+                "name=\"Option_t\" value=\"opc2\">\r\n\t\t<label for=\"opc2\">Opcion 2</label><br>\r\n\t\t<input type=\"radio\" id=\"opc3\"" +
+                "name=\"Option_t\" value=\"opc3\">\r\n\t\t<label for=\"opc3\">Opcion 3</label>\r\n\t\t<br>\r\n\t\t<input type=\"submit\"" +
+                "value=\"submit\">\r\n    </fieldset>\r\n\t\r\n  </form>\r\n </body>\r\n</html>";
+        }
     }
 }

@@ -1,4 +1,5 @@
 using Iot.Device.DhcpServer;
+using JsonConfigurationStore;
 using nanoFramework.Networking;
 using nanoFramework.Runtime.Native;
 using System;
@@ -16,6 +17,7 @@ namespace Projekt_DENT
         static bool WifiConnected = false;
         static string ssid = "Zapato";
         static string password = "holaholahola";
+        static string temp_op = "opc1";
         // Iniciar un servidor web simple
         static WebServer server = new WebServer();
         static WebServer_2 server_2 = new WebServer_2();
@@ -34,9 +36,50 @@ namespace Projekt_DENT
             var gpioController = new GpioController();
             GpioPin setupButton = gpioController.OpenPin(SETUP_PIN, PinMode.InputPullUp);
 
+            ConfigurationStore configurationStore = new ConfigurationStore();
+            if (configurationStore.IsConfigFileExisting ? true:false) {
+                Configuration configuration_ = configurationStore.GetConfig();
+                ssid = configuration_.SSID;
+                password = configuration_.PASSWORD;
+                temp_op = configuration_.Unidad_temperatura;
+                Debug.WriteLine($"ssid: {ssid} Pass: {password} Unidad temperatura: {temp_op}");
+                if (ssid == string.Empty) 
+                {
+                    //Habilitar modo accespoint con configuracion de temperatura
+                }
+            }
             // Si el dispositivo no está conectado a Wifi iniciar acces point para permitir configuracion
-            // or si el boton esta presionado
-            if (true) //Realizar logica segun elementos guardados en EERPOM (true -> wifi configurado, false -> modo acces point
+            // o si el boton esta presionado
+            if (false) //Boton oprimido
+            {
+                //Eliminar toda la configuracion guardada e iniciar modo acces point
+                Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
+                configurationStore.ClearConfig();
+            }
+            /*
+            Configuration configuration = new Configuration()
+            {
+                Unidad_temperatura = "Setting 1 value",
+                SSID = "Setting 2 value",
+                PASSWORD = "Setting 3 value"
+            };
+            
+            Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
+            configurationStore.ClearConfig();
+            Debug.WriteLine("The configuration file has been deleted.");
+            Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
+            Configuration configuration2 = configurationStore.GetConfig();
+            Debug.WriteLine("Unidad_temperatura: " + configuration2.Unidad_temperatura);
+            Debug.WriteLine("SSID: " + configuration2.SSID);
+            Debug.WriteLine("PASSWORD: " + configuration2.PASSWORD);
+            Debug.WriteLine("Saving configuration file");
+            var writeResult = configurationStore.WriteConfig(configuration);
+            Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
+
+            var newConfig = configurationStore.GetConfig();
+            Thread.Sleep(Timeout.Infinite);
+            */
+            if (false) //Realizar logica segun elementos guardados en EERPOM (true -> wifi configurado, false -> modo acces point
             {
                 WifiNetworkHelper.Disconnect();
                 Wireless80211.Enable();
