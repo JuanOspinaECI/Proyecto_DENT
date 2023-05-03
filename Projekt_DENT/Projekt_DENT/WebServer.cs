@@ -23,7 +23,33 @@ namespace Projekt_DENT
         static bool WifiConnected = false;
         static string ssid = null;
         static string password = null;
+        static string temp_opc;
+        static string temp_op = "opc1";
+        static int tp = 20;
+        static int hd = 80;
+        static string temp = "20";
+        static string humedad = "80%";
 
+        public void refresh()
+        {           
+            switch(temp_op)
+            {
+                case "opc1":
+                    tp = tp + 1;
+                    temp = tp + " C";
+                    break;
+
+                case "opc2":
+                    tp = tp + 10;
+                    temp = tp + " K";
+                    break;
+                default:
+                    tp = tp - 10;
+                    temp = tp + " K";
+                    break;
+            }
+            humedad = hd.ToString() + "%";
+        }
         public void Start()
         {
             if (_listener == null)
@@ -78,31 +104,59 @@ namespace Projekt_DENT
                         Debug.WriteLine("URL_cero_: " + url[0]);
                         response.ContentType = "text/html";
                         responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), "");
+                        refresh();
+                        responseString = ReplaceTemperature(responseString, " " + temp);
+                        responseString = ReplaceHumedad(responseString, " " + humedad);
                         OutPutResponse(response, responseString);
                     }
                     break;
 
                 case "POST":
 
-                    // Tomar los parametros necesarios del stream 
+                    // Tomar los parametros necesarios del stream
+                    string[] url_post = request.RawUrl.Split('?');
                     Hashtable hashPars = ParseParamsFromStream(request.InputStream);
+
                     ssid = (string)hashPars["ssid"];
                     password = (string)hashPars["password"];
+                    temp_opc = (string)hashPars["Option_t"];
+                    string message = string.Empty;
 
-                    Debug.WriteLine($"Wireless parameters SSID:{ssid} PASSWORD:{password}");
+                    if (!string.IsNullOrEmpty(ssid)) 
+                    {
+                        Debug.WriteLine($"Wireless parameters SSID:{ssid}");
+                        // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
+                        message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+                    }
 
-                    string message = "<p>New settings saved.</p><p>Rebooting device to put into normal mode</p>";
+                    if (!string.IsNullOrEmpty(password))
+                    {
+                        Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
+                        // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
+                        message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
 
-                    responseString = CreateMainPage(message);
-
+                    }
+                    if (!string.IsNullOrEmpty(temp_opc))
+                    {
+                        Debug.WriteLine($"Wireless parameters temperature option:{temp_opc}");
+                        temp_op = temp_opc;
+                        // Guardar config en JSON
+                        message = "<p>Configuracion de temperatura actualizada</p>";
+                    }
+                    
+                    responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), message);
+                    //responseString = CreateMainPage(message);
+                    refresh();
+                    responseString = ReplaceTemperature(responseString, " " + temp);
+                    responseString = ReplaceHumedad(responseString, " " + humedad);
                     OutPutResponse(response, responseString);
-                    isApSet = true;
+                    //isApSet = true;
                     break;
             }
 
             response.Close();
 
-            if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
+            /*if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
             {
                 // Enable the Wireless station interface
                 // Habilitar la interfaz de la estación wireless
@@ -115,7 +169,7 @@ namespace Projekt_DENT
                 
                 
                 Power.RebootDevice();
-            }
+            }*/
         }
 
         static string ReplaceMessage(string page, string message)
@@ -124,6 +178,26 @@ namespace Projekt_DENT
             if (index >= 0)
             {
                 return page.Substring(0, index) + message + page.Substring(index + 9);
+            }
+
+            return page;
+        }
+        static string ReplaceTemperature(string page, string message)
+        {
+            int index = page.IndexOf("Temperatura:");
+            if (index >= 0)
+            {
+                return page.Substring(0, index + 12) + message + page.Substring(index + 22);
+            }
+
+            return page;
+        }
+        static string ReplaceHumedad(string page, string message)
+        {
+            int index = page.IndexOf("Humedad:");
+            if (index >= 0)
+            {
+                return page.Substring(0, index + 8) + message + page.Substring(index + 17);
             }
 
             return page;
@@ -143,7 +217,7 @@ namespace Projekt_DENT
 
         static Hashtable ParseParamsFromStream(Stream inputStream)
         {
-            Debug.WriteLine("stream" + inputStream.ToString());
+            //Debug.WriteLine("stream" + inputStream.ToString());
             byte[] buffer = new byte[inputStream.Length];
             inputStream.Read(buffer, 0, (int)inputStream.Length);
 
@@ -157,8 +231,15 @@ namespace Projekt_DENT
             string[] parPairs = rawParams.Split('&');
             foreach (string pair in parPairs)
             {
-                string[] nameValue = pair.Split('=');
-                hash.Add(nameValue[0], nameValue[1]);
+                try
+                {
+                    string[] nameValue = pair.Split('=');
+                    hash.Add(nameValue[0], nameValue[1]);
+                }
+                catch {
+                   
+                }
+                
             }
 
             return hash;
