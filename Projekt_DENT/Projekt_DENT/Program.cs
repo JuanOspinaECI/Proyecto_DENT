@@ -18,6 +18,7 @@ namespace Projekt_DENT
         static string ssid = "Zapato";
         static string password = "holaholahola";
         static string temp_op = "opc1";
+        static bool ap = true;
         // Iniciar un servidor web simple
         static WebServer server = new WebServer();
         static WebServer_2 server_2 = new WebServer_2();
@@ -28,6 +29,7 @@ namespace Projekt_DENT
         // GPIO pin usado para poner el dispositivo en modo configuración (reiniciar dispositivo)
         const int SETUP_PIN = 5;
 
+        static ConfigurationStore configurationStore = new ConfigurationStore();
         public static void Main()
         {
             Debug.WriteLine("Iniciando dispositivo de Temperatura y humerdad");
@@ -36,8 +38,9 @@ namespace Projekt_DENT
             var gpioController = new GpioController();
             GpioPin setupButton = gpioController.OpenPin(SETUP_PIN, PinMode.InputPullUp);
 
-            ConfigurationStore configurationStore = new ConfigurationStore();
-            if (configurationStore.IsConfigFileExisting ? true:false) {
+            
+            if (configurationStore.IsConfigFileExisting) {
+                ap = false;
                 Configuration configuration_ = configurationStore.GetConfig();
                 ssid = configuration_.SSID;
                 password = configuration_.PASSWORD;
@@ -46,6 +49,7 @@ namespace Projekt_DENT
                 if (ssid == string.Empty) 
                 {
                     //Habilitar modo accespoint con configuracion de temperatura
+                    ap = true;
                 }
             }
             // Si el dispositivo no está conectado a Wifi iniciar acces point para permitir configuracion
@@ -55,6 +59,7 @@ namespace Projekt_DENT
                 //Eliminar toda la configuracion guardada e iniciar modo acces point
                 Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
                 configurationStore.ClearConfig();
+                ap = true;
             }
             /*
             Configuration configuration = new Configuration()
@@ -79,10 +84,11 @@ namespace Projekt_DENT
             var newConfig = configurationStore.GetConfig();
             Thread.Sleep(Timeout.Infinite);
             */
-            if (false) //Realizar logica segun elementos guardados en EERPOM (true -> wifi configurado, false -> modo acces point
+            if (!ap) //Realizar logica segun elementos guardados en EERPOM (true -> wifi configurado, false -> modo acces point
             {
-                WifiNetworkHelper.Disconnect();
+                try { WifiNetworkHelper.Disconnect(); } catch { Debug.WriteLine("**Reiniciar dispositivo"); }// Poner en Pantalla si funciona
                 Wireless80211.Enable();
+                int counter = 0;
                 try
                 {
 
@@ -98,7 +104,8 @@ namespace Projekt_DENT
                     Thread.Sleep(10_000);
 
                     // Loop forever scanning every 30 seconds
-                    while (!WifiConnected)
+                    
+                    while (!WifiConnected && !(counter > 3))
                     {
                         try
                         {
@@ -112,7 +119,7 @@ namespace Projekt_DENT
                             Debug.WriteLine($"Failure starting a scan operation: {ex}");
                             Debug.WriteLine("Reinicio el dispositivo nuevamente"); // Enviar a pantalla LED
                         }
-
+                        counter++;
                         Thread.Sleep(30000);
                     }
                 }
@@ -121,11 +128,21 @@ namespace Projekt_DENT
                     Debug.WriteLine("message:" + ex.Message);
                     Debug.WriteLine("stack:" + ex.StackTrace);
                 }
-                server_2.Start(ssid);
+                if (counter < 4) { server_2.Start(ssid); }
+                else { Debug.WriteLine("No se logro conectar a red wifi, modo acces point, eliminado red wifi");
+                    Debug.WriteLine("Volver a configurar en pagina de acces point");
+                    Wireless80211.Disable();
+                    Configuration configuration_ = configurationStore.GetConfig();
+                    configuration_.SSID = string.Empty;
+                    var writeResult = configurationStore.WriteConfig(configuration_);
+                    Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
+                    Power.RebootDevice();
+
+                }
             }
-            else
+            if (ap)
             {
-                if (!Wireless80211.IsEnabled() || (setupButton.Read() == PinValue.High))
+                if (true)//(!Wireless80211.IsEnabled() || (setupButton.Read() == PinValue.High)) // Revisar si se puede quitar condicional
                 {
 
                     Wireless80211.Disable();
@@ -156,7 +173,7 @@ namespace Projekt_DENT
                     // Es posible inicial el servidor web
                     server.Start();
                 }
-                else
+                /* else
                 {
                     Debug.WriteLine($"SSID y PASSWORD configurada, funcionando en modo normal");
                     var conf = Wireless80211.GetConfiguration();
@@ -185,13 +202,14 @@ namespace Projekt_DENT
                     {
                         Debug.WriteLine($"Hubo algun error en la conexion,");
                     }
-                }
+                }*/
             }
 
 
 
             // Just wait for now
             // Here you would have the reset of your program using the client WiFI link
+
             Thread.Sleep(Timeout.Infinite);
         }
 
