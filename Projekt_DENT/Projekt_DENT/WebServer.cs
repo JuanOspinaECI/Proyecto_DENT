@@ -13,6 +13,12 @@ using System.Net.NetworkInformation;
 using System.Threading;
 using JsonConfigurationStore;
 using nanoFramework.Runtime.Native;
+using Iot.Device.DHTxx.Esp32;
+using Iot.Device.Ssd13xx;
+using Iot.Device.Ssd13xx.Samples;
+using System.Device.I2c;
+using System.Device.Gpio;
+using nanoFramework.Hardware.Esp32;
 
 namespace Projekt_DENT
 {
@@ -31,8 +37,10 @@ namespace Projekt_DENT
         static string temp = "20";
         static string humedad = "80%";
         static ConfigurationStore configurationStore = new ConfigurationStore();
-        static Configuration configuration_ = new Configuration();
-
+        static ConfigurationFile configuration_ = new ConfigurationFile();
+        int pinEcho = 18;
+        int pinTrigger = 19;
+        
         public void refresh()
         {
             if (configurationStore.IsConfigFileExisting ? true : false)

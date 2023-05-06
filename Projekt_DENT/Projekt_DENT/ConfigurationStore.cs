@@ -28,14 +28,14 @@ namespace JsonConfigurationStore
 
         public bool IsConfigFileExisting => File.Exists(_configFile);
 
-        public Configuration GetConfig()
+        public ConfigurationFile GetConfig()
         {
             var json = new FileStream(_configFile, FileMode.Open);
-            Configuration config = (Configuration)JsonConvert.DeserializeObject(json, typeof(Configuration));
+            ConfigurationFile config = (ConfigurationFile)JsonConvert.DeserializeObject(json, typeof(ConfigurationFile));
 
             return config;
         }
-        public bool WriteConfig(Configuration config)
+        public bool WriteConfig(ConfigurationFile config)
         {
             try
             {

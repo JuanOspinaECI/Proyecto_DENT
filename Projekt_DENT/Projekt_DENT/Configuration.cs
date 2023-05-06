@@ -5,7 +5,7 @@
 
 namespace JsonConfigurationStore
 {
-    public class Configuration
+    public class ConfigurationFile
     {
         public string SerialNumber { get; set; }
         public string ModelNumber { get; set; }

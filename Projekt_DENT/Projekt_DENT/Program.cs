@@ -9,6 +9,8 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
+using System.Device.I2c;
+using nanoFramework.Hardware.Esp32;
 
 namespace Projekt_DENT
 {
@@ -38,10 +40,9 @@ namespace Projekt_DENT
             var gpioController = new GpioController();
             GpioPin setupButton = gpioController.OpenPin(SETUP_PIN, PinMode.InputPullUp);
 
-            
             if (configurationStore.IsConfigFileExisting) {
                 ap = false;
-                Configuration configuration_ = configurationStore.GetConfig();
+                ConfigurationFile configuration_ = configurationStore.GetConfig();
                 ssid = configuration_.SSID;
                 password = configuration_.PASSWORD;
                 temp_op = configuration_.Unidad_temperatura;
@@ -132,7 +133,7 @@ namespace Projekt_DENT
                 else { Debug.WriteLine("No se logro conectar a red wifi, modo acces point, eliminado red wifi");
                     Debug.WriteLine("Volver a configurar en pagina de acces point");
                     Wireless80211.Disable();
-                    Configuration configuration_ = configurationStore.GetConfig();
+                    ConfigurationFile configuration_ = configurationStore.GetConfig();
                     configuration_.SSID = string.Empty;
                     var writeResult = configurationStore.WriteConfig(configuration_);
                     Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
