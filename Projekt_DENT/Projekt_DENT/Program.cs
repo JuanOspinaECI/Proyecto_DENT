@@ -119,6 +119,7 @@ namespace Projekt_DENT
                         {
                             Debug.WriteLine($"Failure starting a scan operation: {ex}");
                             Debug.WriteLine("Reinicio el dispositivo nuevamente"); // Enviar a pantalla LED
+                            Power.RebootDevice();
                         }
                         counter++;
                         Thread.Sleep(30000);
@@ -128,6 +129,7 @@ namespace Projekt_DENT
                 {
                     Debug.WriteLine("message:" + ex.Message);
                     Debug.WriteLine("stack:" + ex.StackTrace);
+                    Power.RebootDevice();
                 }
                 if (counter < 4) { server_2.Start(ssid); }
                 else { Debug.WriteLine("No se logro conectar a red wifi, modo acces point, eliminado red wifi");
@@ -153,7 +155,7 @@ namespace Projekt_DENT
                         Debug.WriteLine($"Modo acces point configurada, reiniciando dispositivo");
                         Power.RebootDevice();
                     }
-
+                    //Poner try si no sirve reiniciar dispositivo Power.RebootDevice();
                     var dhcpserver = new DhcpServer
                     {
                         CaptivePortalUrl = $"http://{WirelessAP.SoftApIP}"
