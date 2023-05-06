@@ -32,17 +32,52 @@ namespace Projekt_DENT
         static string password = null;
         static string temp_opc;
         static string temp_op = "opc1";
-        static int tp = 20;
-        static int hd = 80;
-        static string temp = "20";
+        static double tp = 20;
+        static string temp0 = "20";
         static string humedad = "80%";
         static ConfigurationStore configurationStore = new ConfigurationStore();
         static ConfigurationFile configuration_ = new ConfigurationFile();
-        int pinEcho = 18;
-        int pinTrigger = 19;
-        
-        public void refresh()
+        static int flagButton = 0;
+        static Dht11 dht11;
+        static Ssd1306 device;
+        static public void refresh()
         {
+            device.ClearScreen();
+
+            var temp = dht11.Temperature;
+            var hum = dht11.Humidity;
+            // You can only display temperature and humidity if the read is successful otherwise, this will raise an exception as
+            // both temperature and humidity are NAN
+            /*if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
+            {
+                device.DrawString(2, 5, "Fecha:", 1, false);
+                device.DrawString(2, 33, "Hora:", 1, false);
+                if (setupButton.Read() == PinValue.Low)
+                {
+                    flagButton = 1;
+                }
+            }*/
+            //else if ((setupButton.Read() == PinValue.High) && (flagButton == 1))
+            //{
+            if (dht11.IsLastReadSuccessful)
+            {
+                /*if (setupButton.Read() == PinValue.Low)
+                {
+                    flagButton = 0;
+                }*/
+                device.DrawString(2, 5, "Temperatura(oC):", 1, false);
+                device.DrawString(2, 33, "Humedad(%):", 1, false);
+                Debug.WriteLine($"Temperature: {temp.DegreesCelsius}\u00B0C, Relative humidity: {hum.Percent}%");
+                device.DrawString(2, 18, temp.DegreesCelsius.ToString("N2"), 1, true);
+                device.DrawString(2, 46, hum.Percent.ToString(), 1, true);
+                device.Display();
+            }
+            else
+            {
+                Debug.WriteLine("Error reading DHT sensor");
+            }
+            //}
+            
             if (configurationStore.IsConfigFileExisting ? true : false)
             {
                 configuration_ = configurationStore.GetConfig();
@@ -51,25 +86,27 @@ namespace Projekt_DENT
             switch (temp_op)
             {
                 case "opc1":
-                    tp = tp + 1;
-                    temp = tp + " C";
+                    tp = temp.DegreesCelsius;
+                    temp0 = tp.ToString("N2") + " C";
                     break;
 
                 case "opc2":
-                    tp = tp + 10;
-                    temp = tp + " K";
+                    tp = temp.DegreesCelsius+293;
+                    temp0 = tp.ToString("N2") + " K";
                     break;
                 default:
-                    tp = tp - 10;
-                    temp = tp + " K";
+                    tp = temp.DegreesFahrenheit;
+                    temp0 = tp.ToString("N2") + " F";
                     break;
             }
-            humedad = hd.ToString() + "%";
+            humedad = hum.Percent.ToString("N2") + "%";
         }
-        public void Start()
+        public void Start(Dht11 dht11_, Ssd1306 device_)
         {
             if (_listener == null)
             {
+                dht11 = dht11_;
+                device = device_;
                 _listener = new HttpListener("http");
                 _serverThread = new Thread(RunServer);
                 _serverThread.Start();
@@ -121,7 +158,7 @@ namespace Projekt_DENT
                         response.ContentType = "text/html";
                         responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), "");
                         refresh();
-                        responseString = ReplaceTemperature(responseString, " " + temp);
+                        responseString = ReplaceTemperature(responseString, " " + temp0);
                         responseString = ReplaceHumedad(responseString, " " + humedad);
                         OutPutResponse(response, responseString);
                     }
@@ -181,7 +218,7 @@ namespace Projekt_DENT
                     responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), message);
                     //responseString = CreateMainPage(message);
                     refresh();
-                    responseString = ReplaceTemperature(responseString, " " + temp);
+                    responseString = ReplaceTemperature(responseString, " " + temp0);
                     responseString = ReplaceHumedad(responseString, " " + humedad);
                     OutPutResponse(response, responseString);
                     //isApSet = true;

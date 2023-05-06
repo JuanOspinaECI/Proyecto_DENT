@@ -11,6 +11,9 @@ using System.Net.NetworkInformation;
 using System.Threading;
 using System.Device.I2c;
 using nanoFramework.Hardware.Esp32;
+using Iot.Device.Ssd13xx;
+using Iot.Device.DHTxx.Esp32;
+using Iot.Device.Ssd13xx.Samples;
 
 namespace Projekt_DENT
 {
@@ -27,13 +30,34 @@ namespace Projekt_DENT
 
         // Contador de ´cantidad de ususarios conectados
         static int connectedCount = 0;
-
         // GPIO pin usado para poner el dispositivo en modo configuración (reiniciar dispositivo)
         const int SETUP_PIN = 5;
-
+        static int pinEcho = 18;
+        static int pinTrigger = 19;
         static ConfigurationStore configurationStore = new ConfigurationStore();
+        static Dht11 dht11;
+        static Ssd1306 device;
         public static void Main()
         {
+            //dht11
+            dht11 = new(pinEcho, pinTrigger);
+            //oled
+            device = new Ssd1306(I2cDevice.Create(new I2cConnectionSettings(1, Ssd1306.DefaultI2cAddress)), Ssd13xx.DisplayResolution.OLED128x64);
+            //I2C para oled
+            Configuration.SetPinFunction(21, DeviceFunction.I2C1_DATA);
+            Configuration.SetPinFunction(22, DeviceFunction.I2C1_CLOCK);
+            //Presentacion oled
+            device.ClearScreen();
+            device.Font = new BasicFont();
+            device.DrawHorizontalLine(1, 1, 127, true);
+            device.DrawVerticalLine(1, 1, 60, true);
+            device.DrawString(2, 12, "==============", 1, true);//centered text
+            device.DrawString(1, 22, "Proyecto DENT", 2, true);//large size 2 font
+            device.DrawString(2, 42, "==============", 1, true);//centered text
+            device.DrawVerticalLine(127, 1, 60, true);
+            device.DrawHorizontalLine(1, 60, 127, true);
+            device.Display();
+
             Debug.WriteLine("Iniciando dispositivo de Temperatura y humerdad");
             Debug.WriteLine("Se iniciara el accespoint o conexión a Wifi");
 
@@ -174,7 +198,7 @@ namespace Projekt_DENT
 
                     // Ahora que ya tenemos la conexion de wifi desactivada, debido a que tenemos un ip estatica configurada
                     // Es posible inicial el servidor web
-                    server.Start();
+                    server.Start(dht11,device);
                 }
                 /* else
                 {
@@ -243,7 +267,7 @@ namespace Projekt_DENT
                     // Wait for Station to be fully connected before starting web server
                     // other you will get a Network error
                     Thread.Sleep(2000);
-                    server.Start();
+                    server.Start(dht11,device);
                 }
             }
             else
