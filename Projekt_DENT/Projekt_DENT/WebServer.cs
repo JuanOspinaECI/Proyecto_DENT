@@ -19,6 +19,7 @@ using Iot.Device.Ssd13xx.Samples;
 using System.Device.I2c;
 using System.Device.Gpio;
 using nanoFramework.Hardware.Esp32;
+using UnitsNet;
 
 namespace Projekt_DENT
 {
@@ -37,46 +38,14 @@ namespace Projekt_DENT
         static string humedad = "80%";
         static ConfigurationStore configurationStore = new ConfigurationStore();
         static ConfigurationFile configuration_ = new ConfigurationFile();
-        static int flagButton = 0;
         static Dht11 dht11;
         static Ssd1306 device;
+        static Temperature temp;
+        static RelativeHumidity hum;
         static public void refresh()
         {
-            device.ClearScreen();
-
-            var temp = dht11.Temperature;
-            var hum = dht11.Humidity;
-            // You can only display temperature and humidity if the read is successful otherwise, this will raise an exception as
-            // both temperature and humidity are NAN
-            /*if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
-            {
-                device.DrawString(2, 5, "Fecha:", 1, false);
-                device.DrawString(2, 33, "Hora:", 1, false);
-                if (setupButton.Read() == PinValue.Low)
-                {
-                    flagButton = 1;
-                }
-            }*/
-            //else if ((setupButton.Read() == PinValue.High) && (flagButton == 1))
-            //{
-            if (dht11.IsLastReadSuccessful)
-            {
-                /*if (setupButton.Read() == PinValue.Low)
-                {
-                    flagButton = 0;
-                }*/
-                device.DrawString(2, 5, "Temperatura(oC):", 1, false);
-                device.DrawString(2, 33, "Humedad(%):", 1, false);
-                Debug.WriteLine($"Temperature: {temp.DegreesCelsius}\u00B0C, Relative humidity: {hum.Percent}%");
-                device.DrawString(2, 18, temp.DegreesCelsius.ToString("N2"), 1, true);
-                device.DrawString(2, 46, hum.Percent.ToString(), 1, true);
-                device.Display();
-            }
-            else
-            {
-                Debug.WriteLine("Error reading DHT sensor");
-            }
-            //}
+            temp = dht11.Temperature;
+            hum = dht11.Humidity;
             
             if (configurationStore.IsConfigFileExisting ? true : false)
             {
@@ -91,7 +60,7 @@ namespace Projekt_DENT
                     break;
 
                 case "opc2":
-                    tp = temp.DegreesCelsius+293;
+                    tp = temp.DegreesCelsius + 293;
                     temp0 = tp.ToString("N2") + " K";
                     break;
                 default:
@@ -99,7 +68,7 @@ namespace Projekt_DENT
                     temp0 = tp.ToString("N2") + " F";
                     break;
             }
-            humedad = hum.Percent.ToString("N2") + "%";
+            humedad = hum.Percent.ToString() + "%";
         }
         public void Start(Dht11 dht11_, Ssd1306 device_)
         {
@@ -121,7 +90,6 @@ namespace Projekt_DENT
         private void RunServer()
         {
             _listener.Start();
-
             while (_listener.IsListening)
             {
                 var context = _listener.GetContext();

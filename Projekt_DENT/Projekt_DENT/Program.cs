@@ -14,6 +14,7 @@ using nanoFramework.Hardware.Esp32;
 using Iot.Device.Ssd13xx;
 using Iot.Device.DHTxx.Esp32;
 using Iot.Device.Ssd13xx.Samples;
+using UnitsNet;
 
 namespace Projekt_DENT
 {
@@ -34,11 +35,17 @@ namespace Projekt_DENT
         const int SETUP_PIN = 5;
         static int pinEcho = 18;
         static int pinTrigger = 19;
+        static int flagButton = 0;
         static ConfigurationStore configurationStore = new ConfigurationStore();
         static Dht11 dht11;
         static Ssd1306 device;
+        static GpioController gpioController;
+        static GpioPin setupButton;
         public static void Main()
         {
+            //Declaracion de boton
+            gpioController = new GpioController();
+            setupButton = gpioController.OpenPin(SETUP_PIN, PinMode.InputPullUp);
             //dht11
             dht11 = new(pinEcho, pinTrigger);
             //oled
@@ -60,9 +67,6 @@ namespace Projekt_DENT
 
             Debug.WriteLine("Iniciando dispositivo de Temperatura y humerdad");
             Debug.WriteLine("Se iniciara el accespoint o conexión a Wifi");
-
-            var gpioController = new GpioController();
-            GpioPin setupButton = gpioController.OpenPin(SETUP_PIN, PinMode.InputPullUp);
 
             if (configurationStore.IsConfigFileExisting) {
                 ap = false;
@@ -155,7 +159,7 @@ namespace Projekt_DENT
                     Debug.WriteLine("stack:" + ex.StackTrace);
                     Power.RebootDevice();
                 }
-                if (counter < 4) { server_2.Start(ssid); }
+                if (counter < 4) { server_2.Start(ssid, dht11, device); }
                 else { Debug.WriteLine("No se logro conectar a red wifi, modo acces point, eliminado red wifi");
                     Debug.WriteLine("Volver a configurar en pagina de acces point");
                     Wireless80211.Disable();
@@ -236,7 +240,56 @@ namespace Projekt_DENT
 
             // Just wait for now
             // Here you would have the reset of your program using the client WiFI link
-
+            device.ClearScreen();
+            Temperature temp = dht11.Temperature;
+            RelativeHumidity hum = dht11.Humidity;
+            while (true)
+            {
+                temp = dht11.Temperature;
+                hum = dht11.Humidity;
+                if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
+                {
+                    //Thread.Sleep(50);
+                    flagButton += 1;
+                    device.ClearScreen();
+                }
+                else if ((setupButton.Read() == PinValue.High) && (flagButton == 1))
+                {
+                    //Thread.Sleep(50);
+                    flagButton -= 1;
+                    device.ClearScreen();
+                }
+                if (flagButton == 0)
+                {
+                    device.DrawString(2, 5, "Fecha:", 1, false);
+                    device.DrawString(2, 33, "Hora:", 1, false);
+                    if (!ap)
+                    {
+                        device.DrawString(2, 18, DateTime.UtcNow.AddHours(-5).Hour.ToString() + ":" + DateTime.UtcNow.Minute.ToString() + ":" + DateTime.UtcNow.Second.ToString(), 1, true);
+                        device.DrawString(2, 46, DateTime.UtcNow.Day.ToString() + ":" + DateTime.UtcNow.Month.ToString() + "/" + DateTime.UtcNow.Year.ToString(), 1, true);
+                    }
+                    else
+                    {
+                        device.DrawString(2, 18, "No Connection", 1, true);
+                        device.DrawString(2, 46, "No Connection", 1, true);
+                    }
+                }
+                else if (flagButton == 1)
+                {
+                    if (dht11.IsLastReadSuccessful)
+                    {
+                        device.DrawString(2, 5, "Temperatura(oC):", 1, false);
+                        device.DrawString(2, 33, "Humedad(%):", 1, false);
+                        device.DrawString(2, 18, temp.DegreesCelsius.ToString("N2"), 1, true);
+                        device.DrawString(2, 46, hum.Percent.ToString(), 1, true);
+                    }
+                    else
+                    {
+                        Debug.WriteLine("Error reading DHT sensor");
+                    }
+                }
+                device.Display();
+            }
             Thread.Sleep(Timeout.Infinite);
         }
 
@@ -267,7 +320,7 @@ namespace Projekt_DENT
                     // Wait for Station to be fully connected before starting web server
                     // other you will get a Network error
                     Thread.Sleep(2000);
-                    server.Start(dht11,device);
+                    server.Start(dht11, device);
                 }
             }
             else
