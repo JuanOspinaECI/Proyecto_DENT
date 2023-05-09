@@ -53,6 +53,7 @@ namespace Projekt_DENT
                     ap = true;
                 }
             }
+            
             // Si el dispositivo no está conectado a Wifi iniciar acces point para permitir configuracion
             // o si el boton esta presionado
             if (false) //Boton oprimido

@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
+using JsonConfigurationStore;
 using nanoFramework.Runtime.Native;
 
 namespace Projekt_DENT
@@ -25,6 +26,8 @@ namespace Projekt_DENT
         static int hd = 80;
         static string temp = "20";
         static string humedad = "80%";
+        static ConfigurationStore configurationStore = new ConfigurationStore();
+        static ConfigurationFile configuration_ = new ConfigurationFile();
         public void refresh()
         {
             switch (temp_op)
@@ -125,8 +128,20 @@ namespace Projekt_DENT
                     temp_opc = (string)hashPars["Option_t"];
                     string message = string.Empty;
 
+                    if (configurationStore.IsConfigFileExisting ? true : false)
+                    {
+                        configuration_ = configurationStore.GetConfig();
+                    }
+                    else
+                    {
+                        configuration_.SSID = string.Empty;
+                        configuration_.PASSWORD = string.Empty;
+                        configuration_.Unidad_temperatura = string.Empty;
+                    }
+
                     if (!string.IsNullOrEmpty(ssid))
                     {
+                        configuration_.SSID = ssid;
                         Debug.WriteLine($"Wireless parameters SSID:{ssid}");
                         // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
                         message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
@@ -134,6 +149,7 @@ namespace Projekt_DENT
 
                     if (!string.IsNullOrEmpty(password))
                     {
+                        configuration_.PASSWORD = password;
                         Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
                         // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
                         message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
@@ -141,14 +157,17 @@ namespace Projekt_DENT
                     }
                     if (!string.IsNullOrEmpty(temp_opc))
                     {
+                        configuration_.Unidad_temperatura = temp_opc;
                         Debug.WriteLine($"Wireless parameters temperature option:{temp_opc}");
                         temp_op = temp_opc;
                         // Guardar config en JSON
                         message = "<p>Configuracion de temperatura actualizada</p>";
                     }
 
-                    
+
                     //responseString = CreateMainPage(message);
+                    var writeResult = configurationStore.WriteConfig(configuration_);
+                    Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
                     refresh();
                     responseString = ReplaceMessage(main_2(), message);
                     //responseString = ReplaceTemperature(responseString, " " + temp);
@@ -156,6 +175,7 @@ namespace Projekt_DENT
                     OutPutResponse(response, responseString);
                     //isApSet = true;
                     break;
+
             }
 
             response.Close();
