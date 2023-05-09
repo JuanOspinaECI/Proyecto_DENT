@@ -13,6 +13,6 @@ namespace JsonConfigurationStore
         public string Unidad_temperatura { get; set; }
         public string SSID { get; set; }
         public string PASSWORD { get; set; }
-        public string Setting4 { get; set; }
+        public string UTC { get; set; }
     }
 }

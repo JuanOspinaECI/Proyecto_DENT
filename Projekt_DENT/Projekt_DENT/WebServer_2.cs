@@ -24,13 +24,15 @@ namespace Projekt_DENT
         static string ssid = null;
         static string password = null;
         static string temp_opc;
+        static string utc_s;
+        static int utc_i;
         static string temp_op = "opc1";
         static double tp = 20;
         static string temp0 = "20";
         static string humedad = "80%";
 
 		static ConfigurationStore configurationStore = new ConfigurationStore();
-		static ConfigurationFile configuration_ = new ConfigurationFile()
+        static ConfigurationFile configuration_ = new ConfigurationFile();
 
         static Dht11 dht11;
         static Ssd1306 device;
@@ -38,26 +40,34 @@ namespace Projekt_DENT
         static RelativeHumidity hum;
         public void refresh()
         {
-            temp = dht11.Temperature;
-            hum = dht11.Humidity;
-            
+            //temp = dht11.Temperature;
+            //hum = dht11.Humidity;
+            try { temp = dht11.Temperature; }
+            catch { temp = UnitsNet.Temperature.Zero; }
+            try { hum = dht11.Humidity; }
+            catch { hum = UnitsNet.RelativeHumidity.Zero; }
+
             switch (temp_op)
             {
                 case "opc1":
-                    tp = temp.DegreesCelsius;
+                    try { tp = temp.DegreesCelsius; }
+                    catch { tp = 0; }
                     temp0 = tp.ToString("N2") + " C";
                     break;
 
                 case "opc2":
-                    tp = temp.DegreesCelsius + 293;
+                    try { tp = temp.DegreesCelsius + 293; }
+                    catch { tp = 0; }
                     temp0 = tp.ToString("N2") + " K";
                     break;
                 default:
-                    tp = temp.DegreesFahrenheit;
+                    try { tp = temp.DegreesFahrenheit; }
+                    catch { tp = 0; }
                     temp0 = tp.ToString("N2") + " F";
                     break;
             }
-            humedad = hum.Percent.ToString() + "%";
+            try { humedad = hum.Percent.ToString() + "%"; }
+            catch { humedad = "0%"; }
         }
         public void set_ssid(String name) 
         {
@@ -112,6 +122,14 @@ namespace Projekt_DENT
             switch (request.HttpMethod)
             {
                 case "GET":
+                    if (configurationStore.IsConfigFileExisting ? true : false)
+                    {
+                        configuration_ = configurationStore.GetConfig();
+                        ssid = configuration_.SSID;
+                        try { utc_i = int.Parse(configuration_.UTC); }
+                        catch { utc_i = 0; }
+
+                    }
                     string[] url = request.RawUrl.Split('?');
                     if (url[0] == "/favicon.ico")
                     {
@@ -140,6 +158,7 @@ namespace Projekt_DENT
                     password = (string)hashPars["password"];
                     temp_opc = (string)hashPars["Option_t"];
                     string message = string.Empty;
+                    utc_s = (string)hashPars["Option_time"];
 
                     if (configurationStore.IsConfigFileExisting ? true : false)
                     {
@@ -150,6 +169,7 @@ namespace Projekt_DENT
                         configuration_.SSID = string.Empty;
                         configuration_.PASSWORD = string.Empty;
                         configuration_.Unidad_temperatura = string.Empty;
+                        configuration_.UTC = string.Empty;
                     }
 
                     if (!string.IsNullOrEmpty(ssid))
@@ -176,7 +196,15 @@ namespace Projekt_DENT
                         // Guardar config en JSON
                         message = "<p>Configuracion de temperatura actualizada</p>";
                     }
-
+                    if (!string.IsNullOrEmpty(utc_s))
+                    {
+                        configuration_.UTC = utc_s;
+                        Debug.WriteLine($"Wireless parameters UTC option:{utc_s}");
+                        try { utc_i = int.Parse(configuration_.UTC); }
+                        catch { utc_i = 0; }
+                        // Guardar config en JSON
+                        message = "<p>Configuracion de hora actualizada</p>";
+                    }
 
                     //responseString = CreateMainPage(message);
                     var writeResult = configurationStore.WriteConfig(configuration_);
@@ -248,7 +276,8 @@ namespace Projekt_DENT
         static void OutPutByteResponse(HttpListenerResponse response, Byte[] responseBytes)
         {
             response.ContentLength64 = responseBytes.Length;
-            response.OutputStream.Write(responseBytes, 0, responseBytes.Length);
+            try { response.OutputStream.Write(responseBytes, 0, responseBytes.Length); }
+            catch { }
 
         }
 
@@ -316,14 +345,72 @@ namespace Projekt_DENT
                 "<meta charset=\"UTF-8\">\r\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\r\n" +
                 "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    \r\n" +
                 "<title>Dispositivo </title>\r\n</head>\r\n <body>\r\n  <h1>Dispostivo de Temperatura y Humedad</h1>\r\n " +
-                "<h2>Conectado actualmente a la red: " + ssid + "</h2>\r\n  <p>Hora local: " + DateTime.UtcNow.ToString() + "</p>\r\n" +
+                "<h2>Conectado actualmente a la red: " + ssid + "</h2>\r\n  <p>Hora local: " + DateTime.UtcNow.AddHours(-5).ToString() + "</p>\r\n" +
                 "<p>Temperatura: " + temp0 + "</p>\r\n" +
                 "<p>Humedad: " + humedad + "</p>\r\n  <form method='GET'>\r\n\t<input type=\"submit\" value=\"Actualizar\">\r\n </form> \r\n"
                 + "<form method='POST'>\r\n    <fieldset><legend>Unidad de temperatura</legend>\r\n\t\t<input type=\"radio\" id=\"opc1\"" +
                 "name=\"Option_t\" value=\"opc1\">\r\n\t\t<label for=\"opc1\">Opcion 1</label><br>\r\n\t\t<input type=\"radio\" id=\"opc2\"" +
                 "name=\"Option_t\" value=\"opc2\">\r\n\t\t<label for=\"opc2\">Opcion 2</label><br>\r\n\t\t<input type=\"radio\" id=\"opc3\"" +
                 "name=\"Option_t\" value=\"opc3\">\r\n\t\t<label for=\"opc3\">Opcion 3</label>\r\n\t\t<br>\r\n\t\t<input type=\"submit\"" +
-                "value=\"submit\">\r\n    </fieldset>\r\n\t\r\n  </form>\r\n </body>\r\n</html>";
+                "value=\"submit\">\r\n </fieldset>\r\n\t\r\n  </form>\r\n" +
+                "<form method = 'POST'>" +
+                "<fieldset><legend> Zona horaria </legend>" +
+                "<input type = \"radio\" id = \"time_u\" name = \"Option_time\" value = \"12\">" +
+                "<label for= \"opc1\"> UTC + 12 </label><br>" +
+                "<input type = \"radio\" id = \"time_u\" name = \"Option_time\" value = \"11\">" +
+                "<label for= \"opc1\"> UTC + 11 </label><br>"+
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"10\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+10</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"9\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+9</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"8\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+8</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"7\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+7</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"6\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+6</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"5\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+5</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"4\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+4</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"3\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+3</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"2\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+2</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"1\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC+1</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"0\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-1\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-1</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-2\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-2</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-3\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-3</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-4\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-4</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-5\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-5</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-6\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-6</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-7\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-7</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-8\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-8</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-9\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-9</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-10\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-10</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-11\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-11</label><br>\r\n\t\t" +
+                "<input type=\"radio\" id=\"time_u\" name=\"Option_time\" value=\"-12\">\r\n\t\t" +
+                "<label for=\"opc1\">UTC-12</label><br>"+
+
+             "<input type = \"submit\" value = \"submit\">" +
+            "</fieldset>" +
+
+               "</form>" +
+                "</body>\r\n</html>";
         }
     }
 }

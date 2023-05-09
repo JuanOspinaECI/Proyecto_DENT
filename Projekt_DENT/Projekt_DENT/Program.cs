@@ -24,6 +24,8 @@ namespace Projekt_DENT
         static string ssid = "Zapato";
         static string password = "holaholahola";
         static string temp_op = "opc1";
+        static string UTC_S = "0";
+        static int UTC_I =0;
         static bool ap = true;
         // Iniciar un servidor web simple
         static WebServer server = new WebServer();
@@ -41,6 +43,7 @@ namespace Projekt_DENT
         static Ssd1306 device;
         static GpioController gpioController;
         static GpioPin setupButton;
+        static int counter = 0;
         public static void Main()
         {
             //Declaracion de boton
@@ -74,7 +77,10 @@ namespace Projekt_DENT
                 ssid = configuration_.SSID;
                 password = configuration_.PASSWORD;
                 temp_op = configuration_.Unidad_temperatura;
-                Debug.WriteLine($"ssid: {ssid} Pass: {password} Unidad temperatura: {temp_op}");
+                UTC_S = configuration_.UTC;
+                try { UTC_I = int.Parse(configuration_.UTC); }
+                catch { UTC_I = 0; }
+                Debug.WriteLine($"ssid: {ssid} Pass: {password} Unidad temperatura: {temp_op} UTC:{UTC_I} y UTC STRING: {UTC_S}");
                 if (ssid == string.Empty) 
                 {
                     //Habilitar modo accespoint con configuracion de temperatura
@@ -118,7 +124,7 @@ namespace Projekt_DENT
             {
                 try { WifiNetworkHelper.Disconnect(); } catch { Debug.WriteLine("**Reiniciar dispositivo"); }// Poner en Pantalla si funciona
                 Wireless80211.Enable();
-                int counter = 0;
+                
                 try
                 {
 
@@ -246,8 +252,12 @@ namespace Projekt_DENT
             RelativeHumidity hum = dht11.Humidity;
             while (true)
             {
-                temp = dht11.Temperature;
-                hum = dht11.Humidity;
+                try { temp = dht11.Temperature; }
+                catch { temp = UnitsNet.Temperature.Zero; }
+                //temp = dht11.Temperature;
+                try { hum = dht11.Humidity; }
+                catch { hum = UnitsNet.RelativeHumidity.Zero; }
+                //hum = dht11.Humidity;
                 if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
                 {
                     //Thread.Sleep(50);
@@ -388,6 +398,7 @@ namespace Projekt_DENT
                     if (result.ConnectionStatus == WifiConnectionStatus.Success)
                     {
                         Debug.WriteLine("Connected to Wifi network");
+                        counter = 0;
                         WifiConnected = true;
                         break;
                     }

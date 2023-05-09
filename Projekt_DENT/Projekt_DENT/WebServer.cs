@@ -55,20 +55,24 @@ namespace Projekt_DENT
             switch (temp_op)
             {
                 case "opc1":
-                    tp = temp.DegreesCelsius;
+                    try { tp = temp.DegreesCelsius; }
+                    catch { tp = 0; }
                     temp0 = tp.ToString("N2") + " C";
                     break;
 
                 case "opc2":
-                    tp = temp.DegreesCelsius + 293;
+                    try { tp = temp.DegreesCelsius + 293; }
+                    catch { tp = 0; }
                     temp0 = tp.ToString("N2") + " K";
                     break;
                 default:
-                    tp = temp.DegreesFahrenheit;
+                    try{tp = temp.DegreesFahrenheit;}
+                    catch {tp = 0;}
                     temp0 = tp.ToString("N2") + " F";
                     break;
             }
-            humedad = hum.Percent.ToString() + "%";
+            try { humedad = hum.Percent.ToString() + "%"; }
+            catch { humedad = "0%"; }
         }
         public void Start(Dht11 dht11_, Ssd1306 device_)
         {
