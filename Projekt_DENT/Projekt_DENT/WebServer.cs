@@ -19,6 +19,7 @@ using Iot.Device.Ssd13xx.Samples;
 using System.Device.I2c;
 using System.Device.Gpio;
 using nanoFramework.Hardware.Esp32;
+using UnitsNet;
 
 namespace Projekt_DENT
 {
@@ -32,17 +33,20 @@ namespace Projekt_DENT
         static string password = null;
         static string temp_opc;
         static string temp_op = "opc1";
-        static int tp = 20;
-        static int hd = 80;
-        static string temp = "20";
+        static double tp = 20;
+        static string temp0 = "20";
         static string humedad = "80%";
         static ConfigurationStore configurationStore = new ConfigurationStore();
         static ConfigurationFile configuration_ = new ConfigurationFile();
-        int pinEcho = 18;
-        int pinTrigger = 19;
-        
-        public void refresh()
+        static Dht11 dht11;
+        static Ssd1306 device;
+        static Temperature temp;
+        static RelativeHumidity hum;
+        static public void refresh()
         {
+            temp = dht11.Temperature;
+            hum = dht11.Humidity;
+            
             if (configurationStore.IsConfigFileExisting ? true : false)
             {
                 configuration_ = configurationStore.GetConfig();
@@ -51,25 +55,27 @@ namespace Projekt_DENT
             switch (temp_op)
             {
                 case "opc1":
-                    tp = tp + 1;
-                    temp = tp + " C";
+                    tp = temp.DegreesCelsius;
+                    temp0 = tp.ToString("N2") + " C";
                     break;
 
                 case "opc2":
-                    tp = tp + 10;
-                    temp = tp + " K";
+                    tp = temp.DegreesCelsius + 293;
+                    temp0 = tp.ToString("N2") + " K";
                     break;
                 default:
-                    tp = tp - 10;
-                    temp = tp + " K";
+                    tp = temp.DegreesFahrenheit;
+                    temp0 = tp.ToString("N2") + " F";
                     break;
             }
-            humedad = hd.ToString() + "%";
+            humedad = hum.Percent.ToString() + "%";
         }
-        public void Start()
+        public void Start(Dht11 dht11_, Ssd1306 device_)
         {
             if (_listener == null)
             {
+                dht11 = dht11_;
+                device = device_;
                 _listener = new HttpListener("http");
                 _serverThread = new Thread(RunServer);
                 _serverThread.Start();
@@ -84,7 +90,6 @@ namespace Projekt_DENT
         private void RunServer()
         {
             _listener.Start();
-
             while (_listener.IsListening)
             {
                 var context = _listener.GetContext();
@@ -121,7 +126,7 @@ namespace Projekt_DENT
                         response.ContentType = "text/html";
                         responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), "");
                         refresh();
-                        responseString = ReplaceTemperature(responseString, " " + temp);
+                        responseString = ReplaceTemperature(responseString, " " + temp0);
                         responseString = ReplaceHumedad(responseString, " " + humedad);
                         OutPutResponse(response, responseString);
                     }
@@ -181,7 +186,7 @@ namespace Projekt_DENT
                     responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), message);
                     //responseString = CreateMainPage(message);
                     refresh();
-                    responseString = ReplaceTemperature(responseString, " " + temp);
+                    responseString = ReplaceTemperature(responseString, " " + temp0);
                     responseString = ReplaceHumedad(responseString, " " + humedad);
                     OutPutResponse(response, responseString);
                     //isApSet = true;

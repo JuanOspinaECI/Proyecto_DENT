@@ -8,7 +8,10 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
 using JsonConfigurationStore;
+using Iot.Device.DHTxx.Esp32;
+using Iot.Device.Ssd13xx;
 using nanoFramework.Runtime.Native;
+using UnitsNet;
 
 namespace Projekt_DENT
 {
@@ -22,31 +25,39 @@ namespace Projekt_DENT
         static string password = null;
         static string temp_opc;
         static string temp_op = "opc1";
-        static int tp = 20;
-        static int hd = 80;
-        static string temp = "20";
+        static double tp = 20;
+        static string temp0 = "20";
         static string humedad = "80%";
-        static ConfigurationStore configurationStore = new ConfigurationStore();
-        static ConfigurationFile configuration_ = new ConfigurationFile();
+
+		static ConfigurationStore configurationStore = new ConfigurationStore();
+		static ConfigurationFile configuration_ = new ConfigurationFile()
+
+        static Dht11 dht11;
+        static Ssd1306 device;
+        static Temperature temp;
+        static RelativeHumidity hum;
         public void refresh()
         {
+            temp = dht11.Temperature;
+            hum = dht11.Humidity;
+            
             switch (temp_op)
             {
                 case "opc1":
-                    tp = tp + 1;
-                    temp = tp + " C";
+                    tp = temp.DegreesCelsius;
+                    temp0 = tp.ToString("N2") + " C";
                     break;
 
                 case "opc2":
-                    tp = tp + 10;
-                    temp = tp + " K";
+                    tp = temp.DegreesCelsius + 293;
+                    temp0 = tp.ToString("N2") + " K";
                     break;
                 default:
-                    tp = tp - 10;
-                    temp = tp + " F";
+                    tp = temp.DegreesFahrenheit;
+                    temp0 = tp.ToString("N2") + " F";
                     break;
             }
-            humedad = hd.ToString() + "%";
+            humedad = hum.Percent.ToString() + "%";
         }
         public void set_ssid(String name) 
         {
@@ -56,9 +67,11 @@ namespace Projekt_DENT
         {
             password = pass;
         }
-        public void Start(String red)
+        public void Start(String red, Dht11 dht11_, Ssd1306 device_)
         {
             ssid = red;
+            dht11 = dht11_;
+            device = device_;
             if (_listener == null)
             {
                 _listener = new HttpListener("http");
@@ -304,7 +317,7 @@ namespace Projekt_DENT
                 "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    \r\n" +
                 "<title>Dispositivo </title>\r\n</head>\r\n <body>\r\n  <h1>Dispostivo de Temperatura y Humedad</h1>\r\n " +
                 "<h2>Conectado actualmente a la red: " + ssid + "</h2>\r\n  <p>Hora local: " + DateTime.UtcNow.ToString() + "</p>\r\n" +
-                "<p>Temperatura: " + temp + "</p>\r\n" +
+                "<p>Temperatura: " + temp0 + "</p>\r\n" +
                 "<p>Humedad: " + humedad + "</p>\r\n  <form method='GET'>\r\n\t<input type=\"submit\" value=\"Actualizar\">\r\n </form> \r\n"
                 + "<form method='POST'>\r\n    <fieldset><legend>Unidad de temperatura</legend>\r\n\t\t<input type=\"radio\" id=\"opc1\"" +
                 "name=\"Option_t\" value=\"opc1\">\r\n\t\t<label for=\"opc1\">Opcion 1</label><br>\r\n\t\t<input type=\"radio\" id=\"opc2\"" +
