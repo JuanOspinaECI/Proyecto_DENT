@@ -44,9 +44,13 @@ namespace Projekt_DENT
         static RelativeHumidity hum;
         static public void refresh()
         {
-            temp = dht11.Temperature;
-            hum = dht11.Humidity;
-            
+            //temp = dht11.Temperature;
+            //hum = dht11.Humidity;
+            try { temp = dht11.Temperature; }
+            catch { temp = UnitsNet.Temperature.Zero; }
+            try { hum = dht11.Humidity; }
+            catch { hum = UnitsNet.RelativeHumidity.Zero; }
+
             if (configurationStore.IsConfigFileExisting ? true : false)
             {
                 configuration_ = configurationStore.GetConfig();

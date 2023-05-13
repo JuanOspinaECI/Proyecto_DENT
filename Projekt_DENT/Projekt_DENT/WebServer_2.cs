@@ -30,8 +30,8 @@ namespace Projekt_DENT
         static double tp = 20;
         static string temp0 = "20";
         static string humedad = "80%";
-
-		static ConfigurationStore configurationStore = new ConfigurationStore();
+        static string message = string.Empty;
+        static ConfigurationStore configurationStore = new ConfigurationStore();
         static ConfigurationFile configuration_ = new ConfigurationFile();
 
         static Dht11 dht11;
@@ -143,8 +143,7 @@ namespace Projekt_DENT
                         Debug.WriteLine("URL_: " + request.RawUrl.ToString());
                         response.ContentType = "text/html";
                         refresh();
-                        responseString = main_2();
-                        OutPutResponse(response, responseString);
+                        OutPutResponse(response, main_2());
                     }
                     break;
 
@@ -157,7 +156,7 @@ namespace Projekt_DENT
                     ssid = (string)hashPars["ssid"];
                     password = (string)hashPars["password"];
                     temp_opc = (string)hashPars["Option_t"];
-                    string message = string.Empty;
+
                     utc_s = (string)hashPars["Option_time"];
 
                     if (configurationStore.IsConfigFileExisting ? true : false)
@@ -177,7 +176,7 @@ namespace Projekt_DENT
                         configuration_.SSID = ssid;
                         Debug.WriteLine($"Wireless parameters SSID:{ssid}");
                         // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
-                        message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+                        //message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
                     }
 
                     if (!string.IsNullOrEmpty(password))
@@ -185,7 +184,7 @@ namespace Projekt_DENT
                         configuration_.PASSWORD = password;
                         Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
                         // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
-                        message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+                        //message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
 
                     }
                     if (!string.IsNullOrEmpty(temp_opc))
@@ -194,7 +193,7 @@ namespace Projekt_DENT
                         Debug.WriteLine($"Wireless parameters temperature option:{temp_opc}");
                         temp_op = temp_opc;
                         // Guardar config en JSON
-                        message = "<p>Configuracion de temperatura actualizada</p>";
+                        //message = "<p>Configuracion de temperatura actualizada</p>";
                     }
                     if (!string.IsNullOrEmpty(utc_s))
                     {
@@ -203,23 +202,25 @@ namespace Projekt_DENT
                         try { utc_i = int.Parse(configuration_.UTC); }
                         catch { utc_i = 0; }
                         // Guardar config en JSON
-                        message = "<p>Configuracion de hora actualizada</p>";
+                        //message = "<p>Configuracion de hora actualizada</p>";
                     }
 
                     //responseString = CreateMainPage(message);
                     var writeResult = configurationStore.WriteConfig(configuration_);
                     Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
                     refresh();
-                    responseString = ReplaceMessage(main_2(), message);
                     //responseString = ReplaceTemperature(responseString, " " + temp);
                     //responseString = ReplaceHumedad(responseString, " " + humedad);
-                    OutPutResponse(response, responseString);
+                    OutPutResponse(response, main_2());
                     //isApSet = true;
                     break;
 
             }
-
-            response.Close();
+            try { response.Close(); }
+            catch { 
+                Thread.Sleep(1000);
+                response.Close();
+            }
 
             if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
             {
@@ -345,13 +346,13 @@ namespace Projekt_DENT
                 "<meta charset=\"UTF-8\">\r\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\r\n" +
                 "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n    \r\n" +
                 "<title>Dispositivo </title>\r\n</head>\r\n <body>\r\n  <h1>Dispostivo de Temperatura y Humedad</h1>\r\n " +
-                "<h2>Conectado actualmente a la red: " + ssid + "</h2>\r\n  <p>Hora local: " + DateTime.UtcNow.AddHours(-5).ToString() + "</p>\r\n" +
+                "<h2>Conectado actualmente a la red: " + ssid + "</h2>\r\n  <p>Hora local: " + DateTime.UtcNow.AddHours(utc_i).ToString() + "</p>\r\n" +
                 "<p>Temperatura: " + temp0 + "</p>\r\n" +
                 "<p>Humedad: " + humedad + "</p>\r\n  <form method='GET'>\r\n\t<input type=\"submit\" value=\"Actualizar\">\r\n </form> \r\n"
                 + "<form method='POST'>\r\n    <fieldset><legend>Unidad de temperatura</legend>\r\n\t\t<input type=\"radio\" id=\"opc1\"" +
-                "name=\"Option_t\" value=\"opc1\">\r\n\t\t<label for=\"opc1\">Opcion 1</label><br>\r\n\t\t<input type=\"radio\" id=\"opc2\"" +
-                "name=\"Option_t\" value=\"opc2\">\r\n\t\t<label for=\"opc2\">Opcion 2</label><br>\r\n\t\t<input type=\"radio\" id=\"opc3\"" +
-                "name=\"Option_t\" value=\"opc3\">\r\n\t\t<label for=\"opc3\">Opcion 3</label>\r\n\t\t<br>\r\n\t\t<input type=\"submit\"" +
+                "name=\"Option_t\" value=\"opc1\">\r\n\t\t<label for=\"opc1\">Celcius</label><br>\r\n\t\t<input type=\"radio\" id=\"opc2\"" +
+                "name=\"Option_t\" value=\"opc2\">\r\n\t\t<label for=\"opc2\">Kelvin</label><br>\r\n\t\t<input type=\"radio\" id=\"opc3\"" +
+                "name=\"Option_t\" value=\"opc3\">\r\n\t\t<label for=\"opc3\">Fahrenheit</label>\r\n\t\t<br>\r\n\t\t<input type=\"submit\"" +
                 "value=\"submit\">\r\n </fieldset>\r\n\t\r\n  </form>\r\n" +
                 "<form method = 'POST'>" +
                 "<fieldset><legend> Zona horaria </legend>" +

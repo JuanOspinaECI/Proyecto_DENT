@@ -56,6 +56,7 @@ namespace Projekt_DENT
             //I2C para oled
             Configuration.SetPinFunction(21, DeviceFunction.I2C1_DATA);
             Configuration.SetPinFunction(22, DeviceFunction.I2C1_CLOCK);
+            
             //Presentacion oled
             device.ClearScreen();
             device.Font = new BasicFont();
@@ -272,12 +273,14 @@ namespace Projekt_DENT
                 }
                 if (flagButton == 0)
                 {
+                    try { UTC_I = int.Parse(configurationStore.GetConfig().UTC); }
+                    catch { UTC_I = 0; }
                     device.DrawString(2, 5, "Fecha:", 1, false);
                     device.DrawString(2, 33, "Hora:", 1, false);
                     if (!ap)
                     {
-                        device.DrawString(2, 18, DateTime.UtcNow.AddHours(-5).Hour.ToString() + ":" + DateTime.UtcNow.Minute.ToString() + ":" + DateTime.UtcNow.Second.ToString(), 1, true);
-                        device.DrawString(2, 46, DateTime.UtcNow.Day.ToString() + ":" + DateTime.UtcNow.Month.ToString() + "/" + DateTime.UtcNow.Year.ToString(), 1, true);
+                        device.DrawString(2, 18, DateTime.UtcNow.AddHours(UTC_I).Hour.ToString() + ":" + DateTime.UtcNow.AddHours(UTC_I).Minute.ToString() + ":" + DateTime.UtcNow.AddHours(UTC_I).Second.ToString(), 1, true);
+                        device.DrawString(2, 46, DateTime.UtcNow.AddHours(UTC_I).Day.ToString() + "/" + DateTime.UtcNow.AddHours(UTC_I).Month.ToString() + "/" + DateTime.UtcNow.AddHours(UTC_I).Year.ToString(), 1, true);
                     }
                     else
                     {
@@ -289,9 +292,23 @@ namespace Projekt_DENT
                 {
                     if (dht11.IsLastReadSuccessful)
                     {
-                        device.DrawString(2, 5, "Temperatura(oC):", 1, false);
+                        temp_op = configurationStore.GetConfig().Unidad_temperatura;
+                        switch (temp_op)
+                        {
+                            case "opc1":
+                                device.DrawString(2, 5, "Temperatura(oC):", 1, false);
+                                device.DrawString(2, 18, temp.DegreesCelsius.ToString("N2"), 1, true);
+                                break;
+                            case "opc2":
+                                device.DrawString(2, 5, "Temperatura(oK):", 1, false);
+                                device.DrawString(2, 18, (temp.DegreesCelsius + 293).ToString("N2"), 1, true);
+                                break;
+                            default:
+                                device.DrawString(2, 5, "Temperatura(oF):", 1, false);
+                                device.DrawString(2, 18, temp.DegreesFahrenheit.ToString("N2"), 1, true);
+                                break;
+                        }
                         device.DrawString(2, 33, "Humedad(%):", 1, false);
-                        device.DrawString(2, 18, temp.DegreesCelsius.ToString("N2"), 1, true);
                         device.DrawString(2, 46, hum.Percent.ToString(), 1, true);
                     }
                     else
