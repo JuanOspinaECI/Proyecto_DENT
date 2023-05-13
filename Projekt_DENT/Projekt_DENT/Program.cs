@@ -44,6 +44,8 @@ namespace Projekt_DENT
         static GpioController gpioController;
         static GpioPin setupButton;
         static int counter = 0;
+        static string temp_j;
+        static string hum_j;
         public static void Main()
         {
             //Declaracion de boton
@@ -51,11 +53,12 @@ namespace Projekt_DENT
             setupButton = gpioController.OpenPin(SETUP_PIN, PinMode.InputPullUp);
             //dht11
             dht11 = new(pinEcho, pinTrigger);
-            //oled
-            device = new Ssd1306(I2cDevice.Create(new I2cConnectionSettings(1, Ssd1306.DefaultI2cAddress)), Ssd13xx.DisplayResolution.OLED128x64);
             //I2C para oled
             Configuration.SetPinFunction(21, DeviceFunction.I2C1_DATA);
             Configuration.SetPinFunction(22, DeviceFunction.I2C1_CLOCK);
+            //oled
+            device = new Ssd1306(I2cDevice.Create(new I2cConnectionSettings(1, Ssd1306.DefaultI2cAddress)), Ssd13xx.DisplayResolution.OLED128x64);
+            
             
             //Presentacion oled
             device.ClearScreen();
@@ -74,12 +77,12 @@ namespace Projekt_DENT
 
             if (configurationStore.IsConfigFileExisting) {
                 ap = false;
-                ConfigurationFile configuration_ = configurationStore.GetConfig();
-                ssid = configuration_.SSID;
-                password = configuration_.PASSWORD;
-                temp_op = configuration_.Unidad_temperatura;
-                UTC_S = configuration_.UTC;
-                try { UTC_I = int.Parse(configuration_.UTC); }
+                ConfigurationFile configuration_2 = configurationStore.GetConfig();
+                ssid = configuration_2.SSID;
+                password = configuration_2.PASSWORD;
+                temp_op = configuration_2.Unidad_temperatura;
+                UTC_S = configuration_2.UTC;
+                try { UTC_I = int.Parse(configuration_2.UTC); }
                 catch { UTC_I = 0; }
                 Debug.WriteLine($"ssid: {ssid} Pass: {password} Unidad temperatura: {temp_op} UTC:{UTC_I} y UTC STRING: {UTC_S}");
                 if (ssid == string.Empty) 
@@ -171,9 +174,9 @@ namespace Projekt_DENT
                 else { Debug.WriteLine("No se logro conectar a red wifi, modo acces point, eliminado red wifi");
                     Debug.WriteLine("Volver a configurar en pagina de acces point");
                     Wireless80211.Disable();
-                    ConfigurationFile configuration_ = configurationStore.GetConfig();
-                    configuration_.SSID = string.Empty;
-                    var writeResult = configurationStore.WriteConfig(configuration_);
+                    ConfigurationFile configuration_2 = configurationStore.GetConfig();
+                    configuration_2.SSID = string.Empty;
+                    var writeResult = configurationStore.WriteConfig(configuration_2);
                     Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
                     Power.RebootDevice();
 
@@ -251,8 +254,15 @@ namespace Projekt_DENT
             device.ClearScreen();
             Temperature temp = dht11.Temperature;
             RelativeHumidity hum = dht11.Humidity;
+            ConfigurationFile configuration_ = new ConfigurationFile();
+
+
             while (true)
             {
+                if (configurationStore.IsConfigFileExisting ? true : false)
+                {
+                    configuration_ = configurationStore.GetConfig();
+                }
                 try { temp = dht11.Temperature; }
                 catch { temp = UnitsNet.Temperature.Zero; }
                 //temp = dht11.Temperature;
@@ -298,18 +308,25 @@ namespace Projekt_DENT
                             case "opc1":
                                 device.DrawString(2, 5, "Temperatura(oC):", 1, false);
                                 device.DrawString(2, 18, temp.DegreesCelsius.ToString("N2"), 1, true);
+                                configuration_.Temp_json = temp.DegreesCelsius.ToString("N2");
+
+
                                 break;
                             case "opc2":
                                 device.DrawString(2, 5, "Temperatura(oK):", 1, false);
                                 device.DrawString(2, 18, (temp.DegreesCelsius + 293).ToString("N2"), 1, true);
+                                configuration_.Temp_json = (temp.DegreesCelsius + 293).ToString("N2");
                                 break;
                             default:
                                 device.DrawString(2, 5, "Temperatura(oF):", 1, false);
                                 device.DrawString(2, 18, temp.DegreesFahrenheit.ToString("N2"), 1, true);
+                                configuration_.Temp_json = temp.DegreesFahrenheit.ToString("N2");
                                 break;
                         }
                         device.DrawString(2, 33, "Humedad(%):", 1, false);
                         device.DrawString(2, 46, hum.Percent.ToString(), 1, true);
+                        configuration_.Hum_json = hum.Percent.ToString();
+                        var writeResult = configurationStore.WriteConfig(configuration_);
                     }
                     else
                     {

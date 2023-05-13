@@ -7,8 +7,8 @@ namespace JsonConfigurationStore
 {
     public class ConfigurationFile
     {
-        public string SerialNumber { get; set; }
-        public string ModelNumber { get; set; }
+        public string Temp_json { get; set; }
+        public string Hum_json { get; set; }
 
         public string Unidad_temperatura { get; set; }
         public string SSID { get; set; }
