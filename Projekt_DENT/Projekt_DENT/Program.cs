@@ -24,6 +24,7 @@ namespace Projekt_DENT
         static string ssid = "Zapato";
         static string password = "holaholahola";
         static string temp_op = "opc1";
+        static HttpListener _listener;
         static string UTC_S = "0";
         static int UTC_I =0;
         static bool ap = true;
@@ -51,11 +52,12 @@ namespace Projekt_DENT
             setupButton = gpioController.OpenPin(SETUP_PIN, PinMode.InputPullUp);
             //dht11
             dht11 = new(pinEcho, pinTrigger);
-            //oled
-            device = new Ssd1306(I2cDevice.Create(new I2cConnectionSettings(1, Ssd1306.DefaultI2cAddress)), Ssd13xx.DisplayResolution.OLED128x64);
             //I2C para oled
             Configuration.SetPinFunction(21, DeviceFunction.I2C1_DATA);
             Configuration.SetPinFunction(22, DeviceFunction.I2C1_CLOCK);
+            //oled
+            device = new Ssd1306(I2cDevice.Create(new I2cConnectionSettings(1, Ssd1306.DefaultI2cAddress)), Ssd13xx.DisplayResolution.OLED128x64);
+            
             
             //Presentacion oled
             device.ClearScreen();
@@ -68,8 +70,8 @@ namespace Projekt_DENT
             device.DrawVerticalLine(127, 1, 60, true);
             device.DrawHorizontalLine(1, 60, 127, true);
             device.Display();
+            Thread.Sleep(2000);
 
-            Debug.WriteLine("Iniciando dispositivo de Temperatura y humerdad");
             Debug.WriteLine("Se iniciara el accespoint o conexión a Wifi");
 
             if (configurationStore.IsConfigFileExisting) {
@@ -91,9 +93,10 @@ namespace Projekt_DENT
             
             // Si el dispositivo no está conectado a Wifi iniciar acces point para permitir configuracion
             // o si el boton esta presionado
-            if (false) //Boton oprimido
+            if (setupButton.Read() == PinValue.High) //Boton oprimido
             {
                 //Eliminar toda la configuracion guardada e iniciar modo acces point
+                Debug.WriteLine("==========================");
                 Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
                 configurationStore.ClearConfig();
                 ap = true;
@@ -147,6 +150,14 @@ namespace Projekt_DENT
                         try
                         {
                             Debug.WriteLine("starting Wi-Fi scan");
+                            device.ClearScreen();
+                            device.DrawString(1, 20, "Conectando", 1, true);//centered text
+                            device.DrawString(1, 30, ".   .   .", 1, true);//centered text
+                            device.DrawHorizontalLine(1, 1, 127, true);
+                            device.DrawVerticalLine(1, 1, 60, true);
+                            device.DrawVerticalLine(127, 1, 60, true);
+                            device.DrawHorizontalLine(1, 60, 127, true);
+                            device.Display();
                             //WirelessAP.Disable();
                             wifi.ScanAsync();
 
@@ -158,7 +169,7 @@ namespace Projekt_DENT
                             Power.RebootDevice();
                         }
                         counter++;
-                        Thread.Sleep(30000);
+                        Thread.Sleep(20000);
                     }
                 }
                 catch (Exception ex)
@@ -167,7 +178,10 @@ namespace Projekt_DENT
                     Debug.WriteLine("stack:" + ex.StackTrace);
                     Power.RebootDevice();
                 }
-                if (counter < 4) { server_2.Start(ssid, dht11, device); }
+                if (counter < 4) 
+                {
+                    server_2.Start(ssid, dht11, device); 
+                }
                 else { Debug.WriteLine("No se logro conectar a red wifi, modo acces point, eliminado red wifi");
                     Debug.WriteLine("Volver a configurar en pagina de acces point");
                     Wireless80211.Disable();
@@ -178,6 +192,14 @@ namespace Projekt_DENT
                     Power.RebootDevice();
 
                 }
+                device.ClearScreen();
+                device.DrawString(1, 15, "Conexion", 1, true);//centered text
+                device.DrawString(1, 35, "Exitosa!", 1, true);//centered text
+                device.DrawHorizontalLine(1, 1, 127, true);
+                device.DrawVerticalLine(1, 1, 60, true);
+                device.DrawVerticalLine(127, 1, 60, true);
+                device.DrawHorizontalLine(1, 60, 127, true);
+                device.Display();
             }
             if (ap)
             {
@@ -204,6 +226,15 @@ namespace Projekt_DENT
 
                     Debug.WriteLine($"Acces point en curso, esperando conexión de un cliente");
                     Debug.WriteLine($"Soft AP IP address :{WirelessAP.GetIP()}");
+                    device.ClearScreen();
+                    device.DrawString(1, 15, "Direccion IP", 1, true);//centered text
+                    device.DrawString(1, 25, "Conexion AP:", 1, true);//centered text
+                    device.DrawString(1, 40, WirelessAP.GetIP().ToString(), 1, true);//large size 2 font
+                    device.DrawHorizontalLine(1, 1, 127, true);
+                    device.DrawVerticalLine(1, 1, 60, true);
+                    device.DrawVerticalLine(127, 1, 60, true);
+                    device.DrawHorizontalLine(1, 60, 127, true);
+                    device.Display();
 
                     // Link up Network event to show Stations connecting/disconnecting to Access point.
                     //NetworkChange.NetworkAPStationChanged += NetworkChange_NetworkAPStationChanged;
@@ -244,8 +275,8 @@ namespace Projekt_DENT
                 }*/
             }
 
-
-
+            //while(_listener.IsListening==false);
+            Thread.Sleep(10_000);//esperar un tiempo de lectura del IP
             // Just wait for now
             // Here you would have the reset of your program using the client WiFI link
             device.ClearScreen();
@@ -261,16 +292,13 @@ namespace Projekt_DENT
                 //hum = dht11.Humidity;
                 if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
                 {
-                    //Thread.Sleep(50);
                     flagButton += 1;
-                    device.ClearScreen();
                 }
                 else if ((setupButton.Read() == PinValue.High) && (flagButton == 1))
                 {
-                    //Thread.Sleep(50);
                     flagButton -= 1;
-                    device.ClearScreen();
                 }
+                device.DrawFilledRectangle(1, 1, 126, 59, false);//limpiar la pantalla de decimales de anteriores impresiones
                 if (flagButton == 0)
                 {
                     try { UTC_I = int.Parse(configurationStore.GetConfig().UTC); }
@@ -317,6 +345,7 @@ namespace Projekt_DENT
                     }
                 }
                 device.Display();
+                Thread.Sleep(1000);
             }
             Thread.Sleep(Timeout.Infinite);
         }
@@ -382,6 +411,15 @@ namespace Projekt_DENT
             {
                 Console.WriteLine("Interface: " + intf.NetworkInterfaceType + ", IP Address: " + intf.IPv4Address.ToString());
             }
+            device.ClearScreen();
+            device.DrawString(2, 15, "Direccion IP", 1, true);//centered text
+            device.DrawString(2, 25, "Conexion WiFi:", 1, true);//centered text
+            device.DrawString(1, 40, Interfaces[0].IPv4Address.ToString(), 1, true);//Dirreción IP para el WiFi
+            device.DrawHorizontalLine(1, 1, 127, true);
+            device.DrawVerticalLine(1, 1, 60, true);
+            device.DrawVerticalLine(127, 1, 60, true);
+            device.DrawHorizontalLine(1, 60, 127, true);
+            device.Display();
         }
 
         /// <summary>

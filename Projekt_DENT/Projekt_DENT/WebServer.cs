@@ -169,7 +169,7 @@ namespace Projekt_DENT
                         configuration_.SSID = ssid;
                         Debug.WriteLine($"Wireless parameters SSID:{ssid}");
                         // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
-                        message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+                        message = "<p>Configuracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
                     }
 
                     if (!string.IsNullOrEmpty(password))
@@ -177,8 +177,18 @@ namespace Projekt_DENT
                         configuration_.PASSWORD = password;
                         Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
                         // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
-                        message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
-
+                        message = "<p>Configuracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+                        /*device.ClearScreen();
+                        device.DrawString(2, 8, "Configuracion", 1, true);//centered text
+                        device.DrawString(1, 18, "actualizada", 1, true);
+                        device.DrawString(2, 36, "Reinicie el", 1, true);//centered text
+                        device.DrawString(2, 46, "dispositivo", 1, true);//centered text
+                        device.DrawHorizontalLine(1, 1, 127, true);
+                        device.DrawVerticalLine(1, 1, 60, true);
+                        device.DrawVerticalLine(127, 1, 60, true);
+                        device.DrawHorizontalLine(1, 60, 127, true);
+                        device.Display();
+                        Thread.Sleep(10000);*/
                     }
                     if (!string.IsNullOrEmpty(temp_opc))
                     {
