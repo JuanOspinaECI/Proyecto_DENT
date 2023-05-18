@@ -38,51 +38,58 @@ namespace Projekt_DENT
         static string humedad = "80%";
         static ConfigurationStore configurationStore = new ConfigurationStore();
         static ConfigurationFile configuration_ = new ConfigurationFile();
-        static Dht11 dht11;
+        //static Dht11 dht11;
         static Ssd1306 device;
-        static Temperature temp;
-        static RelativeHumidity hum;
+        //static Temperature temp;
+        //static RelativeHumidity hum;
         static public void refresh()
         {
+            temp0 = configurationStore.GetConfig().Temp_json;
+            humedad = configurationStore.GetConfig().Hum_json;
             //temp = dht11.Temperature;
             //hum = dht11.Humidity;
-            try { temp = dht11.Temperature; }
+            /*try { temp = dht11.Temperature; }
             catch { temp = UnitsNet.Temperature.Zero; }
             try { hum = dht11.Humidity; }
-            catch { hum = UnitsNet.RelativeHumidity.Zero; }
+            catch { hum = UnitsNet.RelativeHumidity.Zero; }*/
 
             if (configurationStore.IsConfigFileExisting ? true : false)
             {
                 configuration_ = configurationStore.GetConfig();
                 temp_op = configuration_.Unidad_temperatura;
+                
             }
             switch (temp_op)
             {
                 case "opc1":
-                    try { tp = temp.DegreesCelsius; }
-                    catch { tp = 0; }
-                    temp0 = tp.ToString("N2") + " C";
+                    //try { tp = temp.DegreesCelsius; }
+                    //catch { tp = 0; }
+                    temp0 += " C";
+                    //temp0 = tp.ToString("N2") + " C";
                     break;
 
                 case "opc2":
-                    try { tp = temp.DegreesCelsius + 293; }
-                    catch { tp = 0; }
-                    temp0 = tp.ToString("N2") + " K";
+                    //try { tp = temp.DegreesCelsius + 293; }
+                    //catch { tp = 0; }
+                    temp0 += " K";
+                    //temp0 = tp.ToString("N2") + " K";
                     break;
                 default:
-                    try{tp = temp.DegreesFahrenheit;}
-                    catch {tp = 0;}
-                    temp0 = tp.ToString("N2") + " F";
+                    //try{tp = temp.DegreesFahrenheit;}
+                    //catch {tp = 0;}
+                    temp0 += " F";
+                    //temp0 = tp.ToString("N2") + " F";
                     break;
             }
-            try { humedad = hum.Percent.ToString() + "%"; }
-            catch { humedad = "0%"; }
+            //try { humedad = hum.Percent.ToString() + "%"; }
+            //catch { humedad = "0%"; }
+            humedad += " %";
         }
         public void Start(Dht11 dht11_, Ssd1306 device_)
         {
             if (_listener == null)
             {
-                dht11 = dht11_;
+                //dht11 = dht11_;
                 device = device_;
                 _listener = new HttpListener("http");
                 _serverThread = new Thread(RunServer);
@@ -202,7 +209,6 @@ namespace Projekt_DENT
                     Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
 
                     responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), message);
-                    //responseString = CreateMainPage(message);
                     refresh();
                     responseString = ReplaceTemperature(responseString, " " + temp0);
                     responseString = ReplaceHumedad(responseString, " " + humedad);
