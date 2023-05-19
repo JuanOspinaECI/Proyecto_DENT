@@ -74,7 +74,24 @@ namespace Projekt_DENT
             device.Display();
             Thread.Sleep(2000);
 
-            Debug.WriteLine("Se iniciara el accespoint o conexión a Wifi");
+            Debug.WriteLine("Se iniciará el accespoint o conexión a Wifi");
+
+            // Si el dispositivo no está conectado a Wifi iniciar acces point para permitir configuracion
+            // o si el boton esta presionado
+            if (setupButton.Read() == PinValue.High) //Boton oprimido
+            {
+                //Eliminar toda la configuracion guardada e iniciar modo acces point
+                Debug.WriteLine("==========================");
+                Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
+                //configurationStore.ClearConfig();
+                ConfigurationFile configuration_2 = new ConfigurationFile();
+                configuration_2.SSID = string.Empty;
+                configuration_2.PASSWORD = string.Empty;
+                configuration_2.Unidad_temperatura = "opc1";
+                configuration_2.UTC = "0";
+                var writeResult = configurationStore.WriteConfig(configuration_2);
+                ap = true;
+            }
 
             if (configurationStore.IsConfigFileExisting) {
                 ap = false;
@@ -91,17 +108,6 @@ namespace Projekt_DENT
                     //Habilitar modo accespoint con configuracion de temperatura
                     ap = true;
                 }
-            }
-            
-            // Si el dispositivo no está conectado a Wifi iniciar acces point para permitir configuracion
-            // o si el boton esta presionado
-            if (setupButton.Read() == PinValue.High) //Boton oprimido
-            {
-                //Eliminar toda la configuracion guardada e iniciar modo acces point
-                Debug.WriteLine("==========================");
-                Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
-                configurationStore.ClearConfig();
-                ap = true;
             }
 
             if (!ap) //Realizar logica segun elementos guardados en EERPOM (true -> wifi configurado, false -> modo acces point
@@ -169,8 +175,16 @@ namespace Projekt_DENT
                     configuration_2.SSID = string.Empty;
                     var writeResult = configurationStore.WriteConfig(configuration_2);
                     Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
+                    device.ClearScreen();
+                    device.DrawString(1, 15, "Conexion", 1, true);//centered text
+                    device.DrawString(1, 35, "Fallida!", 1, true);//centered text
+                    device.DrawHorizontalLine(1, 1, 127, true);
+                    device.DrawVerticalLine(1, 1, 60, true);
+                    device.DrawVerticalLine(127, 1, 60, true);
+                    device.DrawHorizontalLine(1, 60, 127, true);
+                    device.Display();
+                    Thread.Sleep(5000);
                     Power.RebootDevice();
-
                 }
                 device.ClearScreen();
                 device.DrawString(1, 15, "Conexion", 1, true);//centered text
@@ -229,7 +243,9 @@ namespace Projekt_DENT
             RelativeHumidity hum = dht11.Humidity;
             ConfigurationFile configuration_ = new ConfigurationFile();
 
-
+            Thread ReadButton = new Thread(Button);
+            ReadButton.Start();
+            flagButton = 0;
             while (true)
             {
                 if (configurationStore.IsConfigFileExisting ? true : false)
@@ -242,14 +258,14 @@ namespace Projekt_DENT
                 try { hum = dht11.Humidity; }
                 catch { hum = UnitsNet.RelativeHumidity.Zero; }
                 //hum = dht11.Humidity;
-                if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
+                /*if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
                 {
                     flagButton += 1;
                 }
                 else if ((setupButton.Read() == PinValue.High) && (flagButton == 1))
                 {
                     flagButton -= 1;
-                }
+                }*/
                 device.DrawFilledRectangle(1, 1, 126, 59, false);//limpiar la pantalla de decimales de anteriores impresiones
                 if (flagButton == 0)
                 {
@@ -272,41 +288,72 @@ namespace Projekt_DENT
                 {
                     if (dht11.IsLastReadSuccessful)
                     {
-                        temp_op = configurationStore.GetConfig().Unidad_temperatura;
+                        if (configurationStore.IsConfigFileExisting ? true : false)
+                        {
+                            temp_op = configurationStore.GetConfig().Unidad_temperatura;
+                        }
+                        else
+                        {
+                            temp_op = "opc1";
+                        }
                         switch (temp_op)
                         {
                             case "opc1":
                                 device.DrawString(2, 5, "Temperatura(oC):", 1, false);
                                 device.DrawString(2, 18, temp.DegreesCelsius.ToString("N2"), 1, true);
-                                configuration_.Temp_json = temp.DegreesCelsius.ToString("N2");
-
-
+                                //configuration_.Temp_json = temp.DegreesCelsius.ToString("N2");
                                 break;
                             case "opc2":
                                 device.DrawString(2, 5, "Temperatura(oK):", 1, false);
                                 device.DrawString(2, 18, (temp.DegreesCelsius + 293).ToString("N2"), 1, true);
-                                configuration_.Temp_json = (temp.DegreesCelsius + 293).ToString("N2");
+                                //configuration_.Temp_json = (temp.DegreesCelsius + 293).ToString("N2");
                                 break;
                             default:
                                 device.DrawString(2, 5, "Temperatura(oF):", 1, false);
                                 device.DrawString(2, 18, temp.DegreesFahrenheit.ToString("N2"), 1, true);
-                                configuration_.Temp_json = temp.DegreesFahrenheit.ToString("N2");
+                                //configuration_.Temp_json = temp.DegreesFahrenheit.ToString("N2");
                                 break;
                         }
                         device.DrawString(2, 33, "Humedad(%):", 1, false);
                         device.DrawString(2, 46, hum.Percent.ToString(), 1, true);
-                        configuration_.Hum_json = hum.Percent.ToString();
-                        var writeResult = configurationStore.WriteConfig(configuration_);
+                        //configuration_.Hum_json = hum.Percent.ToString();
+                        //temp_op = configurationStore.GetConfig().Unidad_temperatura;
+                        //var writeResult = configurationStore.WriteConfig(configuration_);
                     }
                     else
                     {
                         Debug.WriteLine("Error reading DHT sensor");
+                        device.ClearScreen();
+                        device.DrawString(2, 12, "==============", 1, true);//centered text
+                        device.DrawString(1, 22, "Error, reinicice.", 1, true);//large size 2 font
+                        device.DrawString(2, 42, "==============", 1, true);//centered text
+                        device.Display();
                     }
                 }
                 device.Display();
                 Thread.Sleep(1000);
             }
-            Thread.Sleep(Timeout.Infinite);
+        }
+
+        public static void Button()
+        {
+            while (true)
+            {
+                if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
+                {
+                    flagButton += 1;
+                    Debug.WriteLine("+1");
+                    //device.ClearScreen();
+                    while (setupButton.Read() == PinValue.High) ;
+                }
+                else if ((setupButton.Read() == PinValue.High) && (flagButton == 1))
+                {
+                    flagButton -= 1;
+                    Debug.WriteLine("-1");
+                    //device.ClearScreen();
+                    while (setupButton.Read() == PinValue.High) ;
+                }
+            }
         }
 
         /// <summary>

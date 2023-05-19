@@ -142,7 +142,7 @@ namespace Projekt_DENT
                         Debug.WriteLine("URL_cero_: " + url[0]);
                         Debug.WriteLine("URL_: " + request.RawUrl.ToString());
                         response.ContentType = "text/html";
-                        //refresh();
+                        refresh();
                         OutPutResponse(response, main_2());
                     }
                     break;
