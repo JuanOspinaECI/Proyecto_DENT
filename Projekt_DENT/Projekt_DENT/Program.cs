@@ -103,29 +103,7 @@ namespace Projekt_DENT
                 configurationStore.ClearConfig();
                 ap = true;
             }
-            /*
-            Configuration configuration = new Configuration()
-            {
-                Unidad_temperatura = "Setting 1 value",
-                SSID = "Setting 2 value",
-                PASSWORD = "Setting 3 value"
-            };
-            
-            Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
-            configurationStore.ClearConfig();
-            Debug.WriteLine("The configuration file has been deleted.");
-            Debug.WriteLine($"A configuration file does {(configurationStore.IsConfigFileExisting ? string.Empty : "not ")} esits.");
-            Configuration configuration2 = configurationStore.GetConfig();
-            Debug.WriteLine("Unidad_temperatura: " + configuration2.Unidad_temperatura);
-            Debug.WriteLine("SSID: " + configuration2.SSID);
-            Debug.WriteLine("PASSWORD: " + configuration2.PASSWORD);
-            Debug.WriteLine("Saving configuration file");
-            var writeResult = configurationStore.WriteConfig(configuration);
-            Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
 
-            var newConfig = configurationStore.GetConfig();
-            Thread.Sleep(Timeout.Infinite);
-            */
             if (!ap) //Realizar logica segun elementos guardados en EERPOM (true -> wifi configurado, false -> modo acces point
             {
                 try { WifiNetworkHelper.Disconnect(); } catch { Debug.WriteLine("**Reiniciar dispositivo"); }// Poner en Pantalla si funciona
@@ -205,79 +183,44 @@ namespace Projekt_DENT
             }
             if (ap)
             {
-                if (true)//(!Wireless80211.IsEnabled() || (setupButton.Read() == PinValue.High)) // Revisar si se puede quitar condicional
-                {
-
-                    Wireless80211.Disable();
-                    if (WirelessAP.Setup() == false)
+                Wireless80211.Disable();
+                if (WirelessAP.Setup() == false)
                     {
                         // Reiniciar el dispositvo para activar Acces Point
                         Debug.WriteLine($"Modo acces point configurada, reiniciando dispositivo");
                         Power.RebootDevice();
                     }
-                    //Poner try si no sirve reiniciar dispositivo Power.RebootDevice();
-                    var dhcpserver = new DhcpServer
+                //Poner try si no sirve reiniciar dispositivo Power.RebootDevice();
+                var dhcpserver = new DhcpServer
                     {
                         CaptivePortalUrl = $"http://{WirelessAP.SoftApIP}"
                     };
-                    var dhcpInitResult = dhcpserver.Start(IPAddress.Parse(WirelessAP.SoftApIP), new IPAddress(new byte[] { 255, 255, 255, 0 }));
+                var dhcpInitResult = dhcpserver.Start(IPAddress.Parse(WirelessAP.SoftApIP), new IPAddress(new byte[] { 255, 255, 255, 0 }));
                     if (!dhcpInitResult)
                     {
                         Debug.WriteLine($"Error iniciando servidor DHCP .");
                     }
 
-                    Debug.WriteLine($"Acces point en curso, esperando conexión de un cliente");
-                    Debug.WriteLine($"Soft AP IP address :{WirelessAP.GetIP()}");
-                    device.ClearScreen();
-                    device.DrawString(1, 15, "Direccion IP", 1, true);//centered text
-                    device.DrawString(1, 25, "Conexion AP:", 1, true);//centered text
-                    device.DrawString(1, 40, WirelessAP.GetIP().ToString(), 1, true);//large size 2 font
-                    device.DrawHorizontalLine(1, 1, 127, true);
-                    device.DrawVerticalLine(1, 1, 60, true);
-                    device.DrawVerticalLine(127, 1, 60, true);
-                    device.DrawHorizontalLine(1, 60, 127, true);
-                    device.Display();
+                Debug.WriteLine($"Acces point en curso, esperando conexión de un cliente");
+                Debug.WriteLine($"Soft AP IP address :{WirelessAP.GetIP()}");
+                device.ClearScreen();
+                device.DrawString(1, 15, "Direccion IP", 1, true);//centered text
+                device.DrawString(1, 25, "Conexion AP:", 1, true);//centered text
+                device.DrawString(1, 40, WirelessAP.GetIP().ToString(), 1, true);//large size 2 font
+                device.DrawHorizontalLine(1, 1, 127, true);
+                device.DrawVerticalLine(1, 1, 60, true);
+                device.DrawVerticalLine(127, 1, 60, true);
+                device.DrawHorizontalLine(1, 60, 127, true);
+                device.Display();
 
-                    // Link up Network event to show Stations connecting/disconnecting to Access point.
-                    //NetworkChange.NetworkAPStationChanged += NetworkChange_NetworkAPStationChanged;
+                // Link up Network event to show Stations connecting/disconnecting to Access point.
+                //NetworkChange.NetworkAPStationChanged += NetworkChange_NetworkAPStationChanged;
 
-                    // Ahora que ya tenemos la conexion de wifi desactivada, debido a que tenemos un ip estatica configurada
-                    // Es posible inicial el servidor web
-                    server.Start(dht11,device);
-                }
-                /* else
-                {
-                    Debug.WriteLine($"SSID y PASSWORD configurada, funcionando en modo normal");
-                    var conf = Wireless80211.GetConfiguration();
-
-                    bool success;
-
-                    // For devices like STM32, the password can't be read
-                    if (string.IsNullOrEmpty(conf.Password))
-                    {
-                        // In this case, we will let the automatic connection happen
-                        success = WifiNetworkHelper.Reconnect(requiresDateTime: true, token: new CancellationTokenSource(60000).Token);
-                    }
-                    else
-                    {
-                        // If we have access to the password, we will force the reconnection
-                        // This is mainly for ESP32 which will connect normaly like that.
-                        success = WifiNetworkHelper.ConnectDhcp(conf.Ssid, conf.Password, requiresDateTime: true, token: new CancellationTokenSource(60000).Token);
-                    }
-
-                    if (success)
-                    {
-                        Debug.WriteLine($"Connection is {success}");
-                        Debug.WriteLine($"La fecha valida actual es: {DateTime.UtcNow}");
-                    }
-                    else
-                    {
-                        Debug.WriteLine($"Hubo algun error en la conexion,");
-                    }
-                }*/
+                // Ahora que ya tenemos la conexion de wifi desactivada, debido a que tenemos un ip estatica configurada
+                // Es posible inicial el servidor web
+                server.Start(dht11,device);
             }
 
-            //while(_listener.IsListening==false);
             Thread.Sleep(10_000);//esperar un tiempo de lectura del IP
             // Just wait for now
             // Here you would have the reset of your program using the client WiFI link

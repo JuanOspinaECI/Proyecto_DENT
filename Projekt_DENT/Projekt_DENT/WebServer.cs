@@ -44,8 +44,7 @@ namespace Projekt_DENT
         //static RelativeHumidity hum;
         static public void refresh()
         {
-            temp0 = configurationStore.GetConfig().Temp_json;
-            humedad = configurationStore.GetConfig().Hum_json;
+            
             //temp = dht11.Temperature;
             //hum = dht11.Humidity;
             /*try { temp = dht11.Temperature; }
@@ -57,7 +56,9 @@ namespace Projekt_DENT
             {
                 configuration_ = configurationStore.GetConfig();
                 temp_op = configuration_.Unidad_temperatura;
-                
+                temp0 = configurationStore.GetConfig().Temp_json;
+                humedad = configurationStore.GetConfig().Hum_json;
+
             }
             switch (temp_op)
             {
@@ -219,20 +220,6 @@ namespace Projekt_DENT
 
             response.Close();
 
-            /*if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
-            {
-                // Enable the Wireless station interface
-                // Habilitar la interfaz de la estación wireless
-                //Wireless80211.Configure(ssid, password);
-
-                // Deshabilitar el acces point
-                WirelessAP.Disable();
-                Thread.Sleep(200);
-                Debug.WriteLine("Hola a reiniciar");
-                
-                
-                Power.RebootDevice();
-            }*/
         }
 
         static string ReplaceMessage(string page, string message)
