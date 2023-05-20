@@ -42,11 +42,10 @@ namespace Projekt_DENT
         //static Dht11 dht11;
         static Aht10 sensor_server;
         static Ssd1306 device;
-        static Temperature temp;
-        static RelativeHumidity hum;
         static public void refresh()
         {
-
+            if (configurationStore.IsConfigFileExisting)
+            { temp_op = configurationStore.GetConfig().Unidad_temperatura; }
             switch (temp_op)
             {
                 case "opc1":
@@ -99,99 +98,103 @@ namespace Projekt_DENT
             var request = context.Request;
             var response = context.Response;
             string responseString;
-            switch (request.HttpMethod)
-            {
-                case "GET":
-                    string[] url = request.RawUrl.Split('?');
-                    if (url[0] == "/favicon.ico")
-                    {
-                        response.ContentType = "image/png";
-                        byte[] responseBytes = Resources.GetBytes(Resources.BinaryResources.favicon);
-                        OutPutByteResponse(response, responseBytes);
-                    }
-                    else
-                    {
-                        Debug.WriteLine("URL_cero_: " + url[0]);
-                        response.ContentType = "text/html";
-                        responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), "");
+            try {
+                switch (request.HttpMethod)
+                {
+                    case "GET":
+                        string[] url = request.RawUrl.Split('?');
+                        if (url[0] == "/favicon.ico")
+                        {
+                            response.ContentType = "image/png";
+                            byte[] responseBytes = Resources.GetBytes(Resources.BinaryResources.favicon);
+                            OutPutByteResponse(response, responseBytes);
+                        }
+                        else
+                        {
+                            Debug.WriteLine("URL_cero_: " + url[0]);
+                            response.ContentType = "text/html";
+                            responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), "");
+                            refresh();
+                            responseString = ReplaceTemperature(responseString, " " + temp0);
+                            responseString = ReplaceHumedad(responseString, " " + humedad);
+                            OutPutResponse(response, responseString);
+                        }
+                        break;
+
+                    case "POST":
+
+                        // Tomar los parametros necesarios del stream
+                        string[] url_post = request.RawUrl.Split('?');
+                        Hashtable hashPars = ParseParamsFromStream(request.InputStream);
+
+                        ssid = (string)hashPars["ssid"];
+                        password = (string)hashPars["password"];
+                        temp_opc = (string)hashPars["Option_t"];
+                        string message = string.Empty;
+
+
+
+                        if (configurationStore.IsConfigFileExisting ? true : false)
+                        {
+                            configuration_ = configurationStore.GetConfig();
+                        }
+                        else
+                        {
+                            configuration_.SSID = string.Empty;
+                            configuration_.PASSWORD = string.Empty;
+                            configuration_.Unidad_temperatura = string.Empty;
+                        }
+
+                        if (!string.IsNullOrEmpty(ssid))
+                        {
+                            configuration_.SSID = ssid;
+                            Debug.WriteLine($"Wireless parameters SSID:{ssid}");
+                            // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
+                            message = "<p>Configuracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+                        }
+
+                        if (!string.IsNullOrEmpty(password))
+                        {
+                            configuration_.PASSWORD = password;
+                            Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
+                            // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
+                            message = "<p>Configuracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+                            /*device.ClearScreen();
+                            device.DrawString(2, 8, "Configuracion", 1, true);//centered text
+                            device.DrawString(1, 18, "actualizada", 1, true);
+                            device.DrawString(2, 36, "Reinicie el", 1, true);//centered text
+                            device.DrawString(2, 46, "dispositivo", 1, true);//centered text
+                            device.DrawHorizontalLine(1, 1, 127, true);
+                            device.DrawVerticalLine(1, 1, 60, true);
+                            device.DrawVerticalLine(127, 1, 60, true);
+                            device.DrawHorizontalLine(1, 60, 127, true);
+                            device.Display();
+                            Thread.Sleep(10000);*/
+                        }
+                        if (!string.IsNullOrEmpty(temp_opc))
+                        {
+                            configuration_.Unidad_temperatura = temp_opc;
+                            Debug.WriteLine($"Wireless parameters temperature option:{temp_opc}");
+                            temp_op = temp_opc;
+                            // Guardar config en JSON
+                            message = "<p>Configuracion de temperatura actualizada</p>";
+                        }
+                        var writeResult = configurationStore.WriteConfig(configuration_);
+                        Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
+
+                        responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), message);
                         refresh();
                         responseString = ReplaceTemperature(responseString, " " + temp0);
                         responseString = ReplaceHumedad(responseString, " " + humedad);
                         OutPutResponse(response, responseString);
-                    }
-                    break;
+                        break;
+                }
 
-                case "POST":
-
-                    // Tomar los parametros necesarios del stream
-                    string[] url_post = request.RawUrl.Split('?');
-                    Hashtable hashPars = ParseParamsFromStream(request.InputStream);
-
-                    ssid = (string)hashPars["ssid"];
-                    password = (string)hashPars["password"];
-                    temp_opc = (string)hashPars["Option_t"];
-                    string message = string.Empty;
-                    
-                    
-                    
-                    if (configurationStore.IsConfigFileExisting ? true : false)
-                    {
-                        configuration_ = configurationStore.GetConfig();
-                    }
-                    else 
-                    {
-                        configuration_.SSID = string.Empty;
-                        configuration_.PASSWORD = string.Empty;
-                        configuration_.Unidad_temperatura = string.Empty;
-                    }
-
-                    if (!string.IsNullOrEmpty(ssid)) 
-                    {
-                        configuration_.SSID = ssid;
-                        Debug.WriteLine($"Wireless parameters SSID:{ssid}");
-                        // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
-                        message = "<p>Configuracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
-                    }
-
-                    if (!string.IsNullOrEmpty(password))
-                    {
-                        configuration_.PASSWORD = password;
-                        Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
-                        // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
-                        message = "<p>Configuracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
-                        /*device.ClearScreen();
-                        device.DrawString(2, 8, "Configuracion", 1, true);//centered text
-                        device.DrawString(1, 18, "actualizada", 1, true);
-                        device.DrawString(2, 36, "Reinicie el", 1, true);//centered text
-                        device.DrawString(2, 46, "dispositivo", 1, true);//centered text
-                        device.DrawHorizontalLine(1, 1, 127, true);
-                        device.DrawVerticalLine(1, 1, 60, true);
-                        device.DrawVerticalLine(127, 1, 60, true);
-                        device.DrawHorizontalLine(1, 60, 127, true);
-                        device.Display();
-                        Thread.Sleep(10000);*/
-                    }
-                    if (!string.IsNullOrEmpty(temp_opc))
-                    {
-                        configuration_.Unidad_temperatura = temp_opc;
-                        Debug.WriteLine($"Wireless parameters temperature option:{temp_opc}");
-                        temp_op = temp_opc;
-                        // Guardar config en JSON
-                        message = "<p>Configuracion de temperatura actualizada</p>";
-                    }
-                    var writeResult = configurationStore.WriteConfig(configuration_);
-                    Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
-
-                    responseString = ReplaceMessage(Resources.GetString(Resources.StringResources.main), message);
-                    refresh();
-                    responseString = ReplaceTemperature(responseString, " " + temp0);
-                    responseString = ReplaceHumedad(responseString, " " + humedad);
-                    OutPutResponse(response, responseString);
-                    break;
+                response.Close();
             }
-
-            response.Close();
-
+            catch (Exception ex) {
+                Console.WriteLine(ex.ToString());
+            }
         }
 
         static string ReplaceMessage(string page, string message)

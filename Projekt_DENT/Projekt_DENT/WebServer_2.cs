@@ -13,6 +13,7 @@ using Iot.Device.Ssd13xx;
 using nanoFramework.Runtime.Native;
 using UnitsNet;
 using Iot.Device.Ahtxx;
+using nanoFramework.Hardware.Esp32;
 
 namespace Projekt_DENT
 {
@@ -38,22 +39,32 @@ namespace Projekt_DENT
         static Aht10 sensor_server;
         public void refresh()
         {
-
-            switch (temp_op)
-            {
-                case "opc1":
-                    temp0 = $"{sensor_server.GetTemperature().DegreesCelsius:F0} C";
-                    break;
-
-                case "opc2":
-                    temp0 = $"{sensor_server.GetTemperature().Kelvins:F0} K";
-                    break;
-                default:
-                    temp0 = $"{sensor_server.GetTemperature().DegreesFahrenheit:F0} F";
-                    break;
+            if (configurationStore.IsConfigFileExisting)
+            { temp_op= configurationStore.GetConfig().Unidad_temperatura;
+                try { utc_i = int.Parse(configurationStore.GetConfig().UTC); }
+                catch { utc_i = 0; }
             }
-            humedad = $"{sensor_server.GetHumidity().Percent:F0}";
-            humedad += " %";
+                try {
+                switch (temp_op)
+                {
+                    case "opc1":
+                        temp0 = $"{sensor_server.GetTemperature().DegreesCelsius:F0} C";
+                        break;
+
+                    case "opc2":
+                        temp0 = $"{sensor_server.GetTemperature().Kelvins:F0} K";
+                        break;
+                    default:
+                        temp0 = $"{sensor_server.GetTemperature().DegreesFahrenheit:F0} F";
+                        break;
+                }
+                humedad = $"{sensor_server.GetHumidity().Percent:F0}";
+                humedad += " %";
+            } catch {
+                temp0 = "0";
+                humedad = "0";
+            }
+            
         }
         public void set_ssid(String name) 
         {
@@ -104,124 +115,129 @@ namespace Projekt_DENT
             //string ssid = null;
             //string password = null;
             bool isApSet = false;
+            try {
+                switch (request.HttpMethod)
+                {
+                    case "GET":
+                        if (configurationStore.IsConfigFileExisting ? true : false)
+                        {
+                            configuration_ = configurationStore.GetConfig();
+                            ssid = configuration_.SSID;
+                            try { utc_i = int.Parse(configuration_.UTC); }
+                            catch { utc_i = 0; }
 
-            switch (request.HttpMethod)
-            {
-                case "GET":
-                    if (configurationStore.IsConfigFileExisting ? true : false)
-                    {
-                        configuration_ = configurationStore.GetConfig();
-                        ssid = configuration_.SSID;
-                        try { utc_i = int.Parse(configuration_.UTC); }
-                        catch { utc_i = 0; }
+                        }
+                        string[] url = request.RawUrl.Split('?');
+                        if (url[0] == "/favicon.ico")
+                        {
+                            response.ContentType = "image/png";
+                            byte[] responseBytes = Resources.GetBytes(Resources.BinaryResources.favicon);
+                            OutPutByteResponse(response, responseBytes);
+                        }
+                        else
+                        {
+                            Debug.WriteLine("URL_cero_: " + url[0]);
+                            Debug.WriteLine("URL_: " + request.RawUrl.ToString());
+                            response.ContentType = "text/html";
+                            refresh();
+                            OutPutResponse(response, main_2());
+                        }
+                        break;
 
-                    }
-                    string[] url = request.RawUrl.Split('?');
-                    if (url[0] == "/favicon.ico")
-                    {
-                        response.ContentType = "image/png";
-                        byte[] responseBytes = Resources.GetBytes(Resources.BinaryResources.favicon);
-                        OutPutByteResponse(response, responseBytes);
-                    }
-                    else
-                    {
-                        Debug.WriteLine("URL_cero_: " + url[0]);
-                        Debug.WriteLine("URL_: " + request.RawUrl.ToString());
-                        response.ContentType = "text/html";
+                    case "POST":
+
+                        // Tomar los parametros necesarios del stream
+                        string[] url_post = request.RawUrl.Split('?');
+                        Hashtable hashPars = ParseParamsFromStream(request.InputStream);
+
+                        ssid = (string)hashPars["ssid"];
+                        password = (string)hashPars["password"];
+                        temp_opc = (string)hashPars["Option_t"];
+
+                        utc_s = (string)hashPars["Option_time"];
+
+                        if (configurationStore.IsConfigFileExisting ? true : false)
+                        {
+                            configuration_ = configurationStore.GetConfig();
+                        }
+                        else
+                        {
+                            configuration_.SSID = string.Empty;
+                            configuration_.PASSWORD = string.Empty;
+                            configuration_.Unidad_temperatura = string.Empty;
+                            configuration_.UTC = string.Empty;
+                        }
+
+                        if (!string.IsNullOrEmpty(ssid))
+                        {
+                            configuration_.SSID = ssid;
+                            Debug.WriteLine($"Wireless parameters SSID:{ssid}");
+                            // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
+                            //message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+                        }
+
+                        if (!string.IsNullOrEmpty(password))
+                        {
+                            configuration_.PASSWORD = password;
+                            Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
+                            // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
+                            //message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
+
+                        }
+                        if (!string.IsNullOrEmpty(temp_opc))
+                        {
+                            configuration_.Unidad_temperatura = temp_opc;
+                            Debug.WriteLine($"Wireless parameters temperature option:{temp_opc}");
+                            temp_op = temp_opc;
+                            // Guardar config en JSON
+                            //message = "<p>Configuracion de temperatura actualizada</p>";
+                        }
+                        if (!string.IsNullOrEmpty(utc_s))
+                        {
+                            configuration_.UTC = utc_s;
+                            Debug.WriteLine($"Wireless parameters UTC option:{utc_s}");
+                            try { utc_i = int.Parse(configuration_.UTC); }
+                            catch { utc_i = 0; }
+                            // Guardar config en JSON
+                            //message = "<p>Configuracion de hora actualizada</p>";
+                        }
+
+                        //responseString = CreateMainPage(message);
+                        var writeResult = configurationStore.WriteConfig(configuration_);
+                        Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
                         refresh();
+                        //responseString = ReplaceTemperature(responseString, " " + temp);
+                        //responseString = ReplaceHumedad(responseString, " " + humedad);
                         OutPutResponse(response, main_2());
-                    }
-                    break;
+                        //isApSet = true;
+                        break;
 
-                case "POST":
+                }
+                try { response.Close(); }
+                catch
+                {
+                    Thread.Sleep(1000);
+                    response.Close();
+                }
 
-                    // Tomar los parametros necesarios del stream
-                    string[] url_post = request.RawUrl.Split('?');
-                    Hashtable hashPars = ParseParamsFromStream(request.InputStream);
+                if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
+                {
+                    // Enable the Wireless station interface
+                    // Habilitar la interfaz de la estación wireless
+                    //Wireless80211.Configure(ssid, password);
 
-                    ssid = (string)hashPars["ssid"];
-                    password = (string)hashPars["password"];
-                    temp_opc = (string)hashPars["Option_t"];
+                    // Deshabilitar el acces point
+                    WirelessAP.Disable();
+                    Thread.Sleep(200);
+                    Debug.WriteLine("Hola a reiniciar");
 
-                    utc_s = (string)hashPars["Option_time"];
 
-                    if (configurationStore.IsConfigFileExisting ? true : false)
-                    {
-                        configuration_ = configurationStore.GetConfig();
-                    }
-                    else
-                    {
-                        configuration_.SSID = string.Empty;
-                        configuration_.PASSWORD = string.Empty;
-                        configuration_.Unidad_temperatura = string.Empty;
-                        configuration_.UTC = string.Empty;
-                    }
-
-                    if (!string.IsNullOrEmpty(ssid))
-                    {
-                        configuration_.SSID = ssid;
-                        Debug.WriteLine($"Wireless parameters SSID:{ssid}");
-                        // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
-                        //message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
-                    }
-
-                    if (!string.IsNullOrEmpty(password))
-                    {
-                        configuration_.PASSWORD = password;
-                        Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
-                        // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
-                        //message = "<p>COnfiguracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
-
-                    }
-                    if (!string.IsNullOrEmpty(temp_opc))
-                    {
-                        configuration_.Unidad_temperatura = temp_opc;
-                        Debug.WriteLine($"Wireless parameters temperature option:{temp_opc}");
-                        temp_op = temp_opc;
-                        // Guardar config en JSON
-                        //message = "<p>Configuracion de temperatura actualizada</p>";
-                    }
-                    if (!string.IsNullOrEmpty(utc_s))
-                    {
-                        configuration_.UTC = utc_s;
-                        Debug.WriteLine($"Wireless parameters UTC option:{utc_s}");
-                        try { utc_i = int.Parse(configuration_.UTC); }
-                        catch { utc_i = 0; }
-                        // Guardar config en JSON
-                        //message = "<p>Configuracion de hora actualizada</p>";
-                    }
-
-                    //responseString = CreateMainPage(message);
-                    var writeResult = configurationStore.WriteConfig(configuration_);
-                    Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
-                    refresh();
-                    //responseString = ReplaceTemperature(responseString, " " + temp);
-                    //responseString = ReplaceHumedad(responseString, " " + humedad);
-                    OutPutResponse(response, main_2());
-                    //isApSet = true;
-                    break;
-
+                    Power.RebootDevice();
+                }
+            } catch (Exception ex) {
+                Console.WriteLine(ex.ToString());
             }
-            try { response.Close(); }
-            catch { 
-                Thread.Sleep(1000);
-                response.Close();
-            }
-
-            if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
-            {
-                // Enable the Wireless station interface
-                // Habilitar la interfaz de la estación wireless
-                //Wireless80211.Configure(ssid, password);
-
-                // Deshabilitar el acces point
-                WirelessAP.Disable();
-                Thread.Sleep(200);
-                Debug.WriteLine("Hola a reiniciar");
-
-
-                Power.RebootDevice();
-            }
+            
         }
 
         static string ReplaceMessage(string page, string message)
@@ -298,7 +314,6 @@ namespace Projekt_DENT
 
             return hash;
         }
-
         static string GetCss()
         {
             return "<head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"><style>" +
