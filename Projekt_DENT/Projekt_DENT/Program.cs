@@ -12,9 +12,10 @@ using System.Threading;
 using System.Device.I2c;
 using nanoFramework.Hardware.Esp32;
 using Iot.Device.Ssd13xx;
-using Iot.Device.DHTxx.Esp32;
+//using Iot.Device.DHTxx.Esp32;
 using Iot.Device.Ssd13xx.Samples;
-using UnitsNet;
+//using UnitsNet;
+using Iot.Device.Ahtxx;
 
 namespace Projekt_DENT
 {
@@ -36,30 +37,24 @@ namespace Projekt_DENT
         static int connectedCount = 0;
         // GPIO pin usado para poner el dispositivo en modo configuración (reiniciar dispositivo)
         const int SETUP_PIN = 5;
-        static int pinEcho = 18;
-        static int pinTrigger = 19;
         static int flagButton = 0;
         static ConfigurationStore configurationStore = new ConfigurationStore();
-        static Dht11 dht11;
         static Ssd1306 device;
         static GpioController gpioController;
         static GpioPin setupButton;
         static int counter = 0;
-        static string temp_j;
-        static string hum_j;
+        static Aht10 Sensor;
         public static void Main()
         {
             //Declaracion de boton
             gpioController = new GpioController();
             setupButton = gpioController.OpenPin(SETUP_PIN, PinMode.InputPullUp);
-            //dht11
-            dht11 = new(pinEcho, pinTrigger);
             //I2C para oled
             Configuration.SetPinFunction(21, DeviceFunction.I2C1_DATA);
             Configuration.SetPinFunction(22, DeviceFunction.I2C1_CLOCK);
             //oled
             device = new Ssd1306(I2cDevice.Create(new I2cConnectionSettings(1, Ssd1306.DefaultI2cAddress)), Ssd13xx.DisplayResolution.OLED128x64);
-            
+            Sensor = new Aht10(I2cDevice.Create(new I2cConnectionSettings(1, Aht10.DefaultI2cAddress)));
             
             //Presentacion oled
             device.ClearScreen();
@@ -166,7 +161,7 @@ namespace Projekt_DENT
                 }
                 if (counter < 4) 
                 {
-                    server_2.Start(ssid, dht11, device); 
+                    server_2.Start(ssid, Sensor, device); 
                 }
                 else { Debug.WriteLine("No se logro conectar a red wifi, modo acces point, eliminado red wifi");
                     Debug.WriteLine("Volver a configurar en pagina de acces point");
@@ -232,15 +227,13 @@ namespace Projekt_DENT
 
                 // Ahora que ya tenemos la conexion de wifi desactivada, debido a que tenemos un ip estatica configurada
                 // Es posible inicial el servidor web
-                server.Start(dht11,device);
+                server.Start(Sensor,device);
             }
 
             Thread.Sleep(10_000);//esperar un tiempo de lectura del IP
             // Just wait for now
             // Here you would have the reset of your program using the client WiFI link
             device.ClearScreen();
-            Temperature temp = dht11.Temperature;
-            RelativeHumidity hum = dht11.Humidity;
             ConfigurationFile configuration_ = new ConfigurationFile();
 
             Thread ReadButton = new Thread(Button);
@@ -252,20 +245,6 @@ namespace Projekt_DENT
                 {
                     configuration_ = configurationStore.GetConfig();
                 }
-                try { temp = dht11.Temperature; }
-                catch { temp = UnitsNet.Temperature.Zero; }
-                //temp = dht11.Temperature;
-                try { hum = dht11.Humidity; }
-                catch { hum = UnitsNet.RelativeHumidity.Zero; }
-                //hum = dht11.Humidity;
-                /*if ((setupButton.Read() == PinValue.High) && (flagButton == 0))
-                {
-                    flagButton += 1;
-                }
-                else if ((setupButton.Read() == PinValue.High) && (flagButton == 1))
-                {
-                    flagButton -= 1;
-                }*/
                 device.DrawFilledRectangle(1, 1, 126, 59, false);//limpiar la pantalla de decimales de anteriores impresiones
                 if (flagButton == 0)
                 {
@@ -286,7 +265,7 @@ namespace Projekt_DENT
                 }
                 else if (flagButton == 1)
                 {
-                    if (dht11.IsLastReadSuccessful)
+                    try
                     {
                         if (configurationStore.IsConfigFileExisting ? true : false)
                         {
@@ -300,34 +279,29 @@ namespace Projekt_DENT
                         {
                             case "opc1":
                                 device.DrawString(2, 5, "Temperatura(oC):", 1, false);
-                                device.DrawString(2, 18, temp.DegreesCelsius.ToString("N2"), 1, true);
-                                //configuration_.Temp_json = temp.DegreesCelsius.ToString("N2");
+                                device.DrawString(2, 18, $"{Sensor.GetTemperature().DegreesCelsius:F1}", 1, true);
                                 break;
                             case "opc2":
                                 device.DrawString(2, 5, "Temperatura(oK):", 1, false);
-                                device.DrawString(2, 18, (temp.DegreesCelsius + 293).ToString("N2"), 1, true);
-                                //configuration_.Temp_json = (temp.DegreesCelsius + 293).ToString("N2");
+                                device.DrawString(2, 18, $"{Sensor.GetTemperature().Kelvins:F1}", 1, true);
                                 break;
                             default:
                                 device.DrawString(2, 5, "Temperatura(oF):", 1, false);
-                                device.DrawString(2, 18, temp.DegreesFahrenheit.ToString("N2"), 1, true);
-                                //configuration_.Temp_json = temp.DegreesFahrenheit.ToString("N2");
+                                device.DrawString(2, 18, $"{Sensor.GetTemperature().DegreesFahrenheit:F1}", 1, true);
                                 break;
                         }
                         device.DrawString(2, 33, "Humedad(%):", 1, false);
-                        device.DrawString(2, 46, hum.Percent.ToString(), 1, true);
-                        //configuration_.Hum_json = hum.Percent.ToString();
-                        //temp_op = configurationStore.GetConfig().Unidad_temperatura;
-                        //var writeResult = configurationStore.WriteConfig(configuration_);
+                        device.DrawString(2, 46, $"{Sensor.GetHumidity().Percent:F0}", 1, true);
                     }
-                    else
+                    catch(Exception ex)
                     {
-                        Debug.WriteLine("Error reading DHT sensor");
+                        Debug.WriteLine("Error reading sensor");
                         device.ClearScreen();
                         device.DrawString(2, 12, "==============", 1, true);//centered text
                         device.DrawString(1, 22, "Error, reinicice.", 1, true);//large size 2 font
                         device.DrawString(2, 42, "==============", 1, true);//centered text
                         device.Display();
+                        Console.WriteLine(ex.ToString());
                     }
                 }
                 device.Display();
@@ -383,7 +357,7 @@ namespace Projekt_DENT
                     // Wait for Station to be fully connected before starting web server
                     // other you will get a Network error
                     Thread.Sleep(2000);
-                    server.Start(dht11, device);
+                    server.Start(Sensor, device);
                 }
             }
             else

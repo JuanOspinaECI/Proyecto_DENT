@@ -8,10 +8,11 @@ using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
 using JsonConfigurationStore;
-using Iot.Device.DHTxx.Esp32;
+//using Iot.Device.DHTxx.Esp32;
 using Iot.Device.Ssd13xx;
 using nanoFramework.Runtime.Native;
 using UnitsNet;
+using Iot.Device.Ahtxx;
 
 namespace Projekt_DENT
 {
@@ -33,41 +34,26 @@ namespace Projekt_DENT
         static string message = string.Empty;
         static ConfigurationStore configurationStore = new ConfigurationStore();
         static ConfigurationFile configuration_ = new ConfigurationFile();
-
-        static Dht11 dht11;
         static Ssd1306 device;
-        static Temperature temp;
-        static RelativeHumidity hum;
+        static Aht10 sensor_server;
         public void refresh()
         {
-            //temp = dht11.Temperature;
-            //hum = dht11.Humidity;
-            try { temp = dht11.Temperature; }
-            catch { temp = UnitsNet.Temperature.Zero; }
-            try { hum = dht11.Humidity; }
-            catch { hum = UnitsNet.RelativeHumidity.Zero; }
 
             switch (temp_op)
             {
                 case "opc1":
-                    try { tp = temp.DegreesCelsius; }
-                    catch { tp = 0; }
-                    temp0 = tp.ToString("N2") + " C";
+                    temp0 = $"{sensor_server.GetTemperature().DegreesCelsius:F0} C";
                     break;
 
                 case "opc2":
-                    try { tp = temp.DegreesCelsius + 293; }
-                    catch { tp = 0; }
-                    temp0 = tp.ToString("N2") + " K";
+                    temp0 = $"{sensor_server.GetTemperature().Kelvins:F0} K";
                     break;
                 default:
-                    try { tp = temp.DegreesFahrenheit; }
-                    catch { tp = 0; }
-                    temp0 = tp.ToString("N2") + " F";
+                    temp0 = $"{sensor_server.GetTemperature().DegreesFahrenheit:F0} F";
                     break;
             }
-            try { humedad = hum.Percent.ToString() + "%"; }
-            catch { humedad = "0%"; }
+            humedad = $"{sensor_server.GetHumidity().Percent:F0}";
+            humedad += " %";
         }
         public void set_ssid(String name) 
         {
@@ -77,10 +63,10 @@ namespace Projekt_DENT
         {
             password = pass;
         }
-        public void Start(String red, Dht11 dht11_, Ssd1306 device_)
+        public void Start(String red, Aht10 ah, Ssd1306 device_)
         {
             ssid = red;
-            dht11 = dht11_;
+            sensor_server = ah;
             device = device_;
             if (_listener == null)
             {
@@ -312,21 +298,6 @@ namespace Projekt_DENT
 
             return hash;
         }
-        static string CreateMainPage(string message)
-        {
-
-            return $"<!DOCTYPE html><html>{GetCss()}<body>" +
-                    "<h1>NanoFramework</h1>" +
-                    "<form method='POST'>" +
-                    "<fieldset><legend>Wireless configuration</legend>" +
-                    "Ssid:</br><input type='input' name='ssid' value='' ></br>" +
-                    "Password:</br><input type='password' name='password' value='' >" +
-                    "<br><br>" +
-                    "<input type='submit' value='Save'>" +
-                    "</fieldset>" +
-                    "<b>" + message + "</b>" +
-                    "</form></body></html>";
-        }
 
         static string GetCss()
         {
@@ -411,6 +382,9 @@ namespace Projekt_DENT
             "</fieldset>" +
 
                "</form>" +
+                   "<script>" +
+                    "setTimeout(\"location.reload(true);\", 60000);"+
+                    "</script>" +
                 "</body>\r\n</html>";
         }
     }
