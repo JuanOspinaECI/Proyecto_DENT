@@ -9,6 +9,8 @@ using System.Device.Wifi;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using System.Web;
+using System.Text;
 using System.Net.NetworkInformation;
 using System.Threading;
 using JsonConfigurationStore;
@@ -253,19 +255,21 @@ namespace Projekt_DENT
             inputStream.Read(buffer, 0, (int)inputStream.Length);
 
             return ParseParams(System.Text.Encoding.UTF8.GetString(buffer, 0, buffer.Length));
+            return ParseParams(HttpUtility.UrlDecode(buffer, Encoding.UTF8)); 
         }
 
         static Hashtable ParseParams(string rawParams)
         {
             Hashtable hash = new Hashtable();
-            Debug.WriteLine("RawParam: " + rawParams); // Revisar el string que llega
+            Debug.WriteLine("RawParam: " + rawParams); // Revisar el string que llega}
+
             string[] parPairs = rawParams.Split('&');
             foreach (string pair in parPairs)
             {
                 try
                 {
                     string[] nameValue = pair.Split('=');
-                    hash.Add(nameValue[0], nameValue[1]);
+                    hash.Add(HttpUtility.UrlDecode(nameValue[0], Encoding.UTF8), HttpUtility.UrlDecode(nameValue[1], Encoding.UTF8));
                 }
                 catch {
                    
