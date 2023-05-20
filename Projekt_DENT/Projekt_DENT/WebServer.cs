@@ -44,23 +44,29 @@ namespace Projekt_DENT
         static Ssd1306 device;
         static public void refresh()
         {
-            if (configurationStore.IsConfigFileExisting)
-            { temp_op = configurationStore.GetConfig().Unidad_temperatura; }
-            switch (temp_op)
-            {
-                case "opc1":
-                    temp0 = $"{sensor_server.GetTemperature().DegreesCelsius:F0} C";
-                    break;
+            try {
+                if (configurationStore.IsConfigFileExisting)
+                { temp_op = configurationStore.GetConfig().Unidad_temperatura; }
+                switch (temp_op)
+                {
+                    case "opc1":
+                        temp0 = $"{sensor_server.GetTemperature().DegreesCelsius:F0} C";
+                        break;
 
-                case "opc2":
-                    temp0 = $"{sensor_server.GetTemperature().Kelvins:F0} K";
-                    break;
-                default:
-                    temp0 = $"{sensor_server.GetTemperature().DegreesFahrenheit:F0} F";
-                    break;
+                    case "opc2":
+                        temp0 = $"{sensor_server.GetTemperature().Kelvins:F0} K";
+                        break;
+                    default:
+                        temp0 = $"{sensor_server.GetTemperature().DegreesFahrenheit:F0} F";
+                        break;
+                }
+                humedad = $"{sensor_server.GetHumidity().Percent:F0}";
+                humedad += " %";
+            } catch {
+                temp0 = "0";
+                humedad = "0";
             }
-            humedad = $"{sensor_server.GetHumidity().Percent:F0}";
-            humedad += " %";
+            
         }
         public void Start(Aht10 sensor_, Ssd1306 device_)
         {
