@@ -164,7 +164,7 @@ namespace Projekt_DENT
                             if (!string.IsNullOrEmpty(ssid))
                             {
                                 configuration_.SSID = ssid;
-                                Debug.WriteLine($"Wireless parameters SSID:{ssid}");
+                                Debug.WriteLine($"Wireless parameters SSID:{HttpUtility.UrlDecode(ssid, Encoding.UTF8)}");
                                 // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
                                 message = "<p>Configuracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
                             }
@@ -172,7 +172,7 @@ namespace Projekt_DENT
                             if (!string.IsNullOrEmpty(password))
                             {
                                 configuration_.PASSWORD = password;
-                                Debug.WriteLine($"Wireless parameters PASSWORD:{password}");
+                                Debug.WriteLine($"Wireless parameters PASSWORD:{HttpUtility.UrlDecode(password, Encoding.UTF8)}");
                                 // Guardar config en JSON y mostrar en pantalla necesidad de reinicio
                                 message = "<p>Configuracion de red actualizada</p><p>Reiniciar el dispositivo para efectuar el cambio de red</p>";
                                 /*device.ClearScreen();
@@ -287,7 +287,8 @@ namespace Projekt_DENT
                 try
                 {
                     string[] nameValue = pair.Split('=');
-                    hash.Add(HttpUtility.UrlDecode(nameValue[0], Encoding.UTF8), HttpUtility.UrlDecode(nameValue[1], Encoding.UTF8));
+                    //hash.Add(HttpUtility.UrlDecode(nameValue[0], Encoding.UTF8), HttpUtility.UrlDecode(nameValue[1], Encoding.UTF8));
+                    hash.Add(HttpUtility.UrlDecode(nameValue[0], Encoding.UTF8), nameValue[1]);
                 }
                 catch {
                    

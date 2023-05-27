@@ -16,6 +16,8 @@ using Iot.Device.Ssd13xx;
 using Iot.Device.Ssd13xx.Samples;
 //using UnitsNet;
 using Iot.Device.Ahtxx;
+using System.Text;
+using System.Web;
 
 namespace Projekt_DENT
 {
@@ -91,8 +93,8 @@ namespace Projekt_DENT
             if (configurationStore.IsConfigFileExisting) {
                 ap = false;
                 ConfigurationFile configuration_2 = configurationStore.GetConfig();
-                ssid = configuration_2.SSID;
-                password = configuration_2.PASSWORD;
+                ssid = HttpUtility.UrlDecode(configuration_2.SSID, Encoding.UTF8);
+                password = HttpUtility.UrlDecode(configuration_2.PASSWORD, Encoding.UTF8);
                 temp_op = configuration_2.Unidad_temperatura;
                 UTC_S = configuration_2.UTC;
                 try { UTC_I = int.Parse(configuration_2.UTC); }
