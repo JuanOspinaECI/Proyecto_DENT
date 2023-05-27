@@ -95,6 +95,11 @@ namespace Projekt_DENT
         private void RunServer()
         {
             _listener.Start();
+            while (true)
+            {
+                HttpListenerContext Request = _listener.GetContext();
+                new Thread(() => ProcessRequest(Request)).Start();
+            }
 
             while (_listener.IsListening)
             {
@@ -102,6 +107,7 @@ namespace Projekt_DENT
                 if (context != null)
                     ProcessRequest(context);
             }
+            
             _listener.Close();
 
             _listener = null;
@@ -130,9 +136,9 @@ namespace Projekt_DENT
                         string[] url = request.RawUrl.Split('?');
                         if (url[0] == "/favicon.ico")
                         {
-                            response.ContentType = "image/png";
-                            byte[] responseBytes = Resources.GetBytes(Resources.BinaryResources.favicon);
-                            OutPutByteResponse(response, responseBytes);
+                            //response.ContentType = "image/png";
+                            //byte[] responseBytes = Resources.GetBytes(Resources.BinaryResources.favicon);
+                            //OutPutByteResponse(response, responseBytes);
                         }
                         else
                         {
@@ -206,8 +212,6 @@ namespace Projekt_DENT
                         var writeResult = configurationStore.WriteConfig(configuration_);
                         Debug.WriteLine($"Configuration file {(writeResult ? "" : "not ")} saved properly.");
                         refresh();
-                        //responseString = ReplaceTemperature(responseString, " " + temp);
-                        //responseString = ReplaceHumedad(responseString, " " + humedad);
                         OutPutResponse(response, main_2());
                         //isApSet = true;
                         break;
@@ -217,59 +221,17 @@ namespace Projekt_DENT
                 catch
                 {
                     Thread.Sleep(1000);
-                    response.Close();
+                    //response.Close();
+                    context.Close();
                 }
 
-                if (isApSet && (!string.IsNullOrEmpty(ssid)) && (!string.IsNullOrEmpty(password)))
-                {
-                    // Enable the Wireless station interface
-                    // Habilitar la interfaz de la estación wireless
-                    //Wireless80211.Configure(ssid, password);
-
-                    // Deshabilitar el acces point
-                    WirelessAP.Disable();
-                    Thread.Sleep(200);
-                    Debug.WriteLine("Hola a reiniciar");
-
-
-                    Power.RebootDevice();
-                }
             } catch (Exception ex) {
                 Console.WriteLine(ex.ToString());
             }
             
         }
 
-        static string ReplaceMessage(string page, string message)
-        {
-            int index = page.IndexOf("{message}");
-            if (index >= 0)
-            {
-                return page.Substring(0, index) + message + page.Substring(index + 9);
-            }
 
-            return page;
-        }
-        static string ReplaceTemperature(string page, string message)
-        {
-            int index = page.IndexOf("Temperatura:");
-            if (index >= 0)
-            {
-                return page.Substring(0, index + 12) + message + page.Substring(index + 22);
-            }
-
-            return page;
-        }
-        static string ReplaceHumedad(string page, string message)
-        {
-            int index = page.IndexOf("Humedad:");
-            if (index >= 0)
-            {
-                return page.Substring(0, index + 8) + message + page.Substring(index + 17);
-            }
-
-            return page;
-        }
 
         static void OutPutResponse(HttpListenerResponse response, string responseString)
         {

@@ -126,7 +126,7 @@ namespace Projekt_DENT
 
                     // Loop forever scanning every 30 seconds
                     
-                    while (!WifiConnected && !(counter > 3))
+                    while (!WifiConnected && !(counter > 1000))
                     {
                         try
                         {
@@ -159,7 +159,7 @@ namespace Projekt_DENT
                     Debug.WriteLine("stack:" + ex.StackTrace);
                     Power.RebootDevice();
                 }
-                if (counter < 4) 
+                if (counter < 1000) 
                 {
                     server_2.Start(ssid, Sensor, device); 
                 }
@@ -279,19 +279,19 @@ namespace Projekt_DENT
                         {
                             case "opc1":
                                 device.DrawString(2, 5, "Temperatura(oC):", 1, false);
-                                device.DrawString(2, 18, $"{Sensor.GetTemperature().DegreesCelsius:F1}", 1, true);
+                                //device.DrawString(2, 18, $"{Sensor.GetTemperature().DegreesCelsius:F1}", 1, true);
                                 break;
                             case "opc2":
                                 device.DrawString(2, 5, "Temperatura(oK):", 1, false);
-                                device.DrawString(2, 18, $"{Sensor.GetTemperature().Kelvins:F1}", 1, true);
+                                //device.DrawString(2, 18, $"{Sensor.GetTemperature().Kelvins:F1}", 1, true);
                                 break;
                             default:
                                 device.DrawString(2, 5, "Temperatura(oF):", 1, false);
-                                device.DrawString(2, 18, $"{Sensor.GetTemperature().DegreesFahrenheit:F1}", 1, true);
+                                //device.DrawString(2, 18, $"{Sensor.GetTemperature().DegreesFahrenheit:F1}", 1, true);
                                 break;
                         }
                         device.DrawString(2, 33, "Humedad(%):", 1, false);
-                        device.DrawString(2, 46, $"{Sensor.GetHumidity().Percent:F0}", 1, true);
+                        //device.DrawString(2, 46, $"{Sensor.GetHumidity().Percent:F0}", 1, true);
                     }
                     catch(Exception ex)
                     {

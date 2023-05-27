@@ -22,8 +22,6 @@
     <Compile Include="Configuration.cs" />
     <Compile Include="ConfigurationStore.cs" />
     <Compile Include="DoubleByteFont.cs" />
-    <Compile Include="SpanRgba32.cs" />
-    <Compile Include="Ssd1306Extensions.cs" />
     <Compile Include="WebServer_2.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -114,9 +112,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources.resx" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="Resources\Html\main_page.html" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\Html\main.html" />
