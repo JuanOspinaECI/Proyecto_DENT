@@ -37,6 +37,7 @@ namespace Projekt_DENT
         static ConfigurationFile configuration_ = new ConfigurationFile();
         static Ssd1306 device;
         static Aht10 sensor_server;
+        bool cont = true;
         public void refresh()
         {
             if (configurationStore.IsConfigFileExisting)
@@ -89,16 +90,20 @@ namespace Projekt_DENT
 
         public void Stop()
         {
+            cont = false;
+            Thread.Sleep(5000);
             if (_listener != null)
                 _listener.Stop();
         }
         private void RunServer()
         {
             _listener.Start();
-            while (true)
+            cont = true;
+            while (cont)
             {
                 HttpListenerContext Request = _listener.GetContext();
-                new Thread(() => ProcessRequest(Request)).Start();
+                if(Request != null){ new Thread(() => ProcessRequest(Request)).Start(); }
+                
             }
 
             while (_listener.IsListening)

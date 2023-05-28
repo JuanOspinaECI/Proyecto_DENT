@@ -93,7 +93,7 @@ namespace Projekt_DENT
             while (true)
             {
                 HttpListenerContext Request = _listener.GetContext();
-                new Thread(() => ProcessRequest(Request)).Start();
+                if (Request != null) { new Thread(() => ProcessRequest(Request)).Start(); }
             }
             while (_listener.IsListening)
             {

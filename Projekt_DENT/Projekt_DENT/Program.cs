@@ -163,7 +163,7 @@ namespace Projekt_DENT
                 }
                 if (counter < 1000) 
                 {
-                    server_2.Start(ssid, Sensor, device); 
+                    //server_2.Start(ssid, Sensor, device); 
                 }
                 else { Debug.WriteLine("No se logro conectar a red wifi, modo acces point, eliminado red wifi");
                     Debug.WriteLine("Volver a configurar en pagina de acces point");
@@ -210,7 +210,8 @@ namespace Projekt_DENT
                     if (!dhcpInitResult)
                     {
                         Debug.WriteLine($"Error iniciando servidor DHCP .");
-                    }
+                        Power.RebootDevice();
+                     }
 
                 Debug.WriteLine($"Acces point en curso, esperando conexión de un cliente");
                 Debug.WriteLine($"Soft AP IP address :{WirelessAP.GetIP()}");
@@ -383,6 +384,7 @@ namespace Projekt_DENT
             else
             {
                 Console.WriteLine("Network Connection Lost");
+                try { server_2.Stop(); } catch { }
             }
         }
 
@@ -402,6 +404,7 @@ namespace Projekt_DENT
             device.DrawVerticalLine(127, 1, 60, true);
             device.DrawHorizontalLine(1, 60, 127, true);
             device.Display();
+            server_2.Start(ssid, Sensor, device);
         }
 
         /// <summary>
